@@ -4,6 +4,83 @@
 
 ---
 
+## 🚀 0. Cài Đặt & Chạy Giao Diện (Đọc trước khi làm bất cứ điều gì!)
+
+> Làm đúng thứ tự bên dưới. Chỉ cần làm **bước 1 một lần duy nhất** trên máy mới clone về.
+
+### Yêu cầu trước
+
+| Công cụ | Phiên bản tối thiểu | Link tải |
+|---|---|---|
+| **Node.js** | v18 trở lên | https://nodejs.org |
+| **Git** | Bất kỳ | https://git-scm.com |
+
+Kiểm tra đã cài chưa:
+```bash
+node -v   # phải ra v18.x.x trở lên
+npm -v    # phải ra 9.x.x trở lên
+```
+
+---
+
+### Bước 1 — Cài thư viện (chỉ làm 1 lần, hoặc khi có người thêm package mới)
+
+Mở terminal, `cd` vào thư mục `toeic-web-app` rồi chạy:
+
+```bash
+npm install
+```
+
+> Lệnh này tải tất cả thư viện cần thiết vào thư mục `node_modules/`. Nếu đồng đội vừa thêm thư viện mới và bạn `git pull` về thì cũng cần chạy lại lệnh này.
+
+---
+
+### Bước 2 — Khởi động server giao diện
+
+```bash
+npm run dev
+```
+
+Terminal sẽ hiện ra địa chỉ như sau:
+
+```
+  VITE v5.x.x  ready in xxx ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.x.x:5173/
+```
+
+Mở trình duyệt và truy cập:
+
+| Trang | URL |
+|---|---|
+| **Đăng nhập** | http://localhost:5173/login |
+| **Đăng ký** | http://localhost:5173/register |
+| **Quên mật khẩu** | http://localhost:5173/forgot-password |
+
+> Mặc định http://localhost:5173/ sẽ tự redirect về `/login`.
+
+---
+
+### Lưu ý khi dùng Windows (PowerShell lỗi script)
+
+Nếu terminal báo lỗi `running scripts is disabled on this system`, hãy dùng **Command Prompt (cmd)** thay vì PowerShell:
+
+```cmd
+cmd /c "npm install"
+cmd /c "npm run dev"
+```
+
+Hoặc mở **Git Bash** đi kèm khi cài Git rồi chạy bình thường.
+
+---
+
+### Dừng server
+
+Nhấn `Ctrl + C` trong terminal để tắt.
+
+---
+
 ##  1. Giải Thích Cấu Trúc Thư Mục Hiện Tại
 
 Dự án sử dụng **Vite + ReactJS**. Đây là chuẩn cấu trúc cho dự án lớn (Scalable Architecture).
