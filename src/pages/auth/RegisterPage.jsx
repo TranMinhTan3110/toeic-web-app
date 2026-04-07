@@ -8,18 +8,18 @@ import {
 } from "../../components/icons/AuthIcons";
 
 export default function RegisterPage() {
-  const [name, setName]         = useState("");
-  const [email, setEmail]       = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [showCPw, setShowCPw]   = useState(false);
-  const [agreed, setAgreed]     = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showCPw, setShowCPw] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
-  const [nameFocus, setNameFocus]   = useState(false);
+  const [nameFocus, setNameFocus] = useState(false);
   const [emailFocus, setEmailFocus] = useState(false);
-  const [pwFocus, setPwFocus]       = useState(false);
-  const [cpwFocus, setCpwFocus]     = useState(false);
+  const [pwFocus, setPwFocus] = useState(false);
+  const [cpwFocus, setCpwFocus] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,7 +69,7 @@ export default function RegisterPage() {
       <div className="right">
         <div className="fb">
           <h1 className="ftit">Tạo tài khoản</h1>
-          <p className="fsub">Tham gia cùng hàng nghìn học viên 🚀</p>
+          <p className="fsub">Tham gia cùng hàng nghìn học viên</p>
 
           <form onSubmit={handleSubmit}>
             {/* Full name */}
