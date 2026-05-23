@@ -8,11 +8,11 @@ import {
 } from "../../components/icons/AuthIcons";
 
 export default function LoginPage() {
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [emailFocus, setEmailFocus] = useState(false);
-  const [pwFocus, setPwFocus]       = useState(false);
+  const [pwFocus, setPwFocus] = useState(false);
 
   return (
     <div className="page">
@@ -49,7 +49,7 @@ export default function LoginPage() {
       <div className="right">
         <div className="fb">
           <h1 className="ftit">Đăng nhập</h1>
-          <p className="fsub">Chào mừng bạn quay lại 👋</p>
+          <p className="fsub">Chào mừng bạn quay lại</p>
 
           <form onSubmit={(e) => { e.preventDefault(); alert("Đăng nhập thành công!"); }}>
             {/* Email */}

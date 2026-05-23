@@ -7,10 +7,10 @@ import {
 } from "../../components/icons/AuthIcons";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [emailFocus, setEmailFocus] = useState(false);
-  const [sent, setSent]         = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
             /* ── Step 1: Enter email ── */
             <>
               <h1 className="ftit">Quên mật khẩu?</h1>
-              <p className="fsub">Nhập email để nhận link đặt lại mật khẩu 🔑</p>
+              <p className="fsub">Nhập email để nhận link đặt lại mật khẩu</p>
 
               <form onSubmit={handleSubmit}>
                 <div className="fld">
