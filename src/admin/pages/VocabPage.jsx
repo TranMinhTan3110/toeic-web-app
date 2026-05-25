@@ -7,11 +7,13 @@ export default function VocabPage() {
   const [vocabList, setVocabList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeTopic, setActiveTopic] = useState("Tất cả");
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   // State Modal CRUD
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,14 +44,26 @@ export default function VocabPage() {
 
   const topics = ["Tất cả", "business", "office", "travel", "finance", "health"];
 
-  // Tải danh sách từ vựng từ API
+  // Xử lý Debounce tìm kiếm để tránh gọi API dồn dập khi gõ phím
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset về trang 1 khi đổi từ khóa tìm kiếm
+    }, 400);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
+  // Tải danh sách từ vựng từ API (Server-side Pagination & Filter & Search)
   const fetchVocabularies = async () => {
     setIsLoading(true);
     try {
       const topicFilter = activeTopic === "Tất cả" ? null : activeTopic;
-      const data = await vocabService.getAll(topicFilter);
-      setVocabList(data || []);
-      setCurrentPage(1); // Reset về trang 1 khi đổi bộ lọc
+      const data = await vocabService.getAll(topicFilter, null, currentPage, rowsPerPage, debouncedSearchQuery);
+      setVocabList(data.items || []);
+      setTotalCount(data.totalCount || 0);
     } catch (error) {
       console.error("Lỗi khi tải từ vựng:", error);
       Swal.fire({
@@ -67,20 +81,14 @@ export default function VocabPage() {
 
   useEffect(() => {
     fetchVocabularies();
-  }, [activeTopic]);
+  }, [activeTopic, currentPage, rowsPerPage, debouncedSearchQuery]);
 
-  // Bộ lọc tìm kiếm local
-  const filteredVocab = vocabList.filter((item) =>
-    item.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.definitionVi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.definitionEn.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Xử lý Phân trang
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = filteredVocab.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(filteredVocab.length / rowsPerPage);
+  // Phân trang và tìm kiếm đã được xử lý từ phía server.
+  // currentRows và totalPages được tính toán dựa trên dữ liệu trả về và totalCount.
+  const currentRows = vocabList;
+  const totalPages = Math.ceil(totalCount / rowsPerPage);
+  const indexOfFirstRow = (currentPage - 1) * rowsPerPage;
+  const indexOfLastRow = indexOfFirstRow + vocabList.length;
 
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -447,7 +455,7 @@ export default function VocabPage() {
               fontSize: 12,
               textTransform: tag !== "Tất cả" ? "capitalize" : "none",
             }}
-            onClick={() => setActiveTopic(tag)}
+            onClick={() => { setActiveTopic(tag); setCurrentPage(1); }}
           >
             {tag}
           </button>
@@ -459,7 +467,7 @@ export default function VocabPage() {
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
           <div className="auth-spinner" style={{ borderTopColor: "var(--accent)", width: 40, height: 40 }} />
         </div>
-      ) : filteredVocab.length === 0 ? (
+      ) : totalCount === 0 ? (
         <div className="empty-state card">
           <p className="empty-title">Không tìm thấy từ vựng nào</p>
           <p className="empty-desc">Hãy thử thay đổi bộ lọc hoặc thêm mới từ vựng.</p>
@@ -543,7 +551,7 @@ export default function VocabPage() {
           {totalPages > 1 && (
             <div style={paginationWrapperStyle}>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                Hiển thị {indexOfFirstRow + 1} - {Math.min(indexOfLastRow, filteredVocab.length)} trong tổng số {filteredVocab.length} từ
+                Hiển thị {indexOfFirstRow + 1} - {Math.min(indexOfLastRow, totalCount)} trong tổng số {totalCount} từ
               </span>
               <div style={{ display: "flex", gap: 6 }}>
                 <button

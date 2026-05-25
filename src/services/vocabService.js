@@ -4,10 +4,11 @@ export const vocabService = {
   /**
    * Lấy danh sách từ vựng (hỗ trợ lọc topic, level)
    */
-  getAll: async (topic, level) => {
-    const params = {};
+  getAll: async (topic, level, page = 1, limit = 10, search = "") => {
+    const params = { page, limit };
     if (topic && topic !== "Tất cả") params.topic = topic;
     if (level) params.level = level;
+    if (search) params.search = search;
     const response = await apiClient.get("/vocabularies", { params });
     return response.data;
   },
