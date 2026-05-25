@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../../config/firebase";
+import Swal from "sweetalert2";
 import "../../styles/auth.css";
 import {
   EyeOpenIcon, EyeOffIcon,
@@ -21,17 +24,134 @@ export default function RegisterPage() {
   const [pwFocus, setPwFocus] = useState(false);
   const [cpwFocus, setCpwFocus] = useState(false);
 
-  const handleSubmit = (e) => {
+  // Trạng thái loading và thông báo lỗi
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+
     if (password !== confirmPw) {
-      alert("Mật khẩu xác nhận không khớp!");
+      const msg = "Mật khẩu xác nhận không khớp!";
+      setErrorMsg(msg);
+      Swal.fire({
+        icon: "warning",
+        title: "Xác nhận mật khẩu thất bại",
+        text: msg,
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+      });
       return;
     }
     if (!agreed) {
-      alert("Vui lòng đồng ý với điều khoản sử dụng!");
+      const msg = "Vui lòng đồng ý với điều khoản sử dụng!";
+      setErrorMsg(msg);
+      Swal.fire({
+        icon: "info",
+        title: "Điều khoản dịch vụ",
+        text: msg,
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+      });
       return;
     }
-    alert("Đăng ký thành công!");
+
+    setIsLoading(true);
+
+    try {
+      // 1. Tạo tài khoản Email/Password trên Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // 2. Cập nhật Họ và tên vào Profile Firebase
+      await updateProfile(userCredential.user, {
+        displayName: name,
+      });
+
+      const succ = "Đăng ký tài khoản thành công! Đang chuyển hướng...";
+      setSuccessMsg(succ);
+      
+      Swal.fire({
+        icon: "success",
+        title: "Tạo tài khoản thành công!",
+        text: "Chào mừng bạn đến với TOEIC Master.",
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+        timer: 3000,
+        timerProgressBar: true,
+      });
+      // onAuthStateChanged ở App.jsx sẽ tự nhận diện đăng nhập và đồng bộ với C# BE
+    } catch (error) {
+      console.error("Lỗi đăng ký tài khoản:", error);
+      let msg = "";
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          msg = "Email này đã được sử dụng bởi tài khoản khác.";
+          break;
+        case "auth/invalid-email":
+          msg = "Địa chỉ email không hợp lệ.";
+          break;
+        case "auth/weak-password":
+          msg = "Mật khẩu quá yếu (Yêu cầu ít nhất 6 ký tự).";
+          break;
+        default:
+          msg = "Đăng ký thất bại. Vui lòng thử lại!";
+      }
+      setErrorMsg(msg);
+      Swal.fire({
+        icon: "error",
+        title: "Đăng ký thất bại",
+        text: msg,
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Đăng ký qua Google
+  const handleGoogleRegister = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      await signInWithPopup(auth, googleProvider);
+      
+      Swal.fire({
+        icon: "success",
+        title: "Tạo tài khoản thành công!",
+        text: "Đang đồng bộ và chuyển hướng...",
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+        timer: 2000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+      console.error("Lỗi đăng ký bằng Google:", error);
+      if (error.code !== "auth/popup-closed-by-user") {
+        const msg = "Đăng ký bằng Google thất bại. Vui lòng thử lại!";
+        setErrorMsg(msg);
+        Swal.fire({
+          icon: "error",
+          title: "Đăng ký thất bại",
+          text: msg,
+          confirmButtonColor: "#FF6B35",
+          background: "#1e1b4b",
+          color: "#fff",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +191,22 @@ export default function RegisterPage() {
           <h1 className="ftit">Tạo tài khoản</h1>
           <p className="fsub">Tham gia cùng hàng nghìn học viên</p>
 
+          {/* Hiển thị lỗi nếu có */}
+          {errorMsg && (
+            <div className="auth-error-alert" style={errorAlertStyle}>
+              <span style={{ marginRight: "8px" }}>⚠️</span>
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Hiển thị thông báo thành công */}
+          {successMsg && (
+            <div className="auth-success-alert" style={successAlertStyle}>
+              <span style={{ marginRight: "8px" }}>✅</span>
+              {successMsg}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             {/* Full name */}
             <div className="fld">
@@ -88,6 +224,7 @@ export default function RegisterPage() {
                   onBlur={() => setNameFocus(false)}
                   autoComplete="name"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -108,6 +245,7 @@ export default function RegisterPage() {
                   onBlur={() => setEmailFocus(false)}
                   autoComplete="email"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -121,20 +259,22 @@ export default function RegisterPage() {
                   id="reg-password"
                   className="inp"
                   type={showPw ? "text" : "password"}
-                  placeholder="Ít nhất 8 ký tự"
+                  placeholder="Ít nhất 6 ký tự"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setPwFocus(true)}
                   onBlur={() => setPwFocus(false)}
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={6}
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   className="eyeb"
                   aria-label={showPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                   onClick={() => setShowPw(!showPw)}
+                  disabled={isLoading}
                 >
                   {showPw ? <EyeOpenIcon /> : <EyeOffIcon />}
                 </button>
@@ -157,12 +297,14 @@ export default function RegisterPage() {
                   onBlur={() => setCpwFocus(false)}
                   autoComplete="new-password"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   className="eyeb"
                   aria-label={showCPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                   onClick={() => setShowCPw(!showCPw)}
+                  disabled={isLoading}
                 >
                   {showCPw ? <EyeOpenIcon /> : <EyeOffIcon />}
                 </button>
@@ -177,6 +319,7 @@ export default function RegisterPage() {
                 className="fchk"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
+                disabled={isLoading}
               />
               <label htmlFor="reg-terms" className="fchkt">
                 Tôi đồng ý với{" "}
@@ -185,12 +328,23 @@ export default function RegisterPage() {
               </label>
             </div>
 
-            <button type="submit" className="btn-l">Đăng ký</button>
+            <button type="submit" className="btn-l" disabled={isLoading}>
+              {isLoading ? (
+                <span className="auth-spinner" style={spinnerStyle}></span>
+              ) : (
+                "Đăng ký"
+              )}
+            </button>
           </form>
 
           <div className="div">hoặc</div>
 
-          <button className="btn-g" type="button">
+          <button 
+            className="btn-g" 
+            type="button" 
+            onClick={handleGoogleRegister} 
+            disabled={isLoading}
+          >
             <GoogleIcon />
             Đăng ký với Google
           </button>
@@ -204,3 +358,44 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+// Style alert
+const errorAlertStyle = {
+  background: "rgba(239, 68, 68, 0.1)",
+  border: "1px solid rgba(239, 68, 68, 0.2)",
+  color: "#ef4444",
+  padding: "0.8rem 1rem",
+  borderRadius: "12px",
+  fontSize: "0.9rem",
+  marginBottom: "1.5rem",
+  display: "flex",
+  alignItems: "center",
+  width: "100%",
+  boxSizing: "border-box",
+  fontFamily: "'Outfit', 'Inter', sans-serif"
+};
+
+const successAlertStyle = {
+  background: "rgba(16, 185, 129, 0.1)",
+  border: "1px solid rgba(16, 185, 129, 0.2)",
+  color: "#10b981",
+  padding: "0.8rem 1rem",
+  borderRadius: "12px",
+  fontSize: "0.9rem",
+  marginBottom: "1.5rem",
+  display: "flex",
+  alignItems: "center",
+  width: "100%",
+  boxSizing: "border-box",
+  fontFamily: "'Outfit', 'Inter', sans-serif"
+};
+
+const spinnerStyle = {
+  display: "inline-block",
+  width: "20px",
+  height: "20px",
+  border: "3px solid rgba(255,255,255,0.3)",
+  borderRadius: "50%",
+  borderTopColor: "#fff",
+  animation: "spin 1s ease-in-out infinite",
+};
