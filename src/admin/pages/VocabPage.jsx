@@ -317,10 +317,14 @@ export default function VocabPage() {
         frequency: row[7] || "medium",
         audioUrl: row[8] || null,
         imageUrl: row[9] || null,
-        synonyms: row[10] ? row[10].split(";").map(s => s.trim()).filter(Boolean) : [],
-        antonyms: row[11] ? row[11].split(";").map(a => a.trim()).filter(Boolean) : [],
-        collocations: row[12] ? row[12].split(";").map(c => c.trim()).filter(Boolean) : [],
-        examples: (row[13] || row[14]) ? [{ sentence: row[13] || "", sentenceVi: row[14] || "" }] : []
+        synonyms: row[10] ? row[10].split(/[;,]/).map(s => s.trim()).filter(Boolean) : [],
+        antonyms: row[11] ? row[11].split(/[;,]/).map(a => a.trim()).filter(Boolean) : [],
+        collocations: row[12] ? row[12].split(/[;,]/).map(c => c.trim()).filter(Boolean) : [],
+        examples: [
+          (row[13] || row[14]) ? { sentence: row[13] || "", sentenceVi: row[14] || "" } : null,
+          (row[15] || row[16]) ? { sentence: row[15] || "", sentenceVi: row[16] || "" } : null,
+          (row[17] || row[18]) ? { sentence: row[17] || "", sentenceVi: row[18] || "" } : null
+        ].filter(Boolean)
       });
     }
     return items;
@@ -328,9 +332,9 @@ export default function VocabPage() {
 
   // Tải file mẫu CSV xuống cho Admin (Đã sửa lỗi hiển thị tiếng Việt trên Microsoft Excel bằng UTF-8 BOM)
   const downloadTemplate = () => {
-    const headers = "Word,Phonetic,WordType,DefinitionEn,DefinitionVi,Topic,Level,Frequency,AudioUrl,ImageUrl,Synonyms,Antonyms,Collocations,ExampleSentence,ExampleSentenceVi\n";
-    const sampleRow = "inventory,/ˈɪnvəntri/,noun,\"A complete list of items such as goods or materials.\",\"Hàng tồn kho, danh mục hàng hóa\",business,650,high,,,stock,shortage,take inventory,We need to check the inventory daily.,Chúng ta cần kiểm tra hàng tồn kho mỗi ngày.\n";
-    
+    const headers = "Word,Phonetic,WordType,DefinitionEn,DefinitionVi,Topic,Level,Frequency,AudioUrl,ImageUrl,Synonyms,Antonyms,Collocations,ExampleSentence1,ExampleSentenceVi1,ExampleSentence2,ExampleSentenceVi2,ExampleSentence3,ExampleSentenceVi3\n";
+    const sampleRow = "inventory,/ˈɪnvəntri/,noun,\"A complete list of items such as goods or materials.\",\"Hàng tồn kho, danh mục hàng hóa\",business,650,high,,,stock,shortage,take inventory,\"We need to check the inventory daily.\",\"Chúng ta cần kiểm tra hàng tồn kho mỗi ngày.\",\"The store's inventory is low.\",\"Hàng tồn kho của cửa hàng đang ở mức thấp.\",\"They are taking inventory this weekend.\",\"Họ đang kiểm kê hàng tồn kho vào cuối tuần này.\"\n";
+
     // Thêm ký tự BOM (\uFEFF) ở đầu file để ép Microsoft Excel mở dạng UTF-8 chuẩn xác
     const bom = "\uFEFF";
     const blob = new Blob([bom + headers + sampleRow], { type: "text/csv;charset=utf-8;" });
@@ -357,7 +361,7 @@ export default function VocabPage() {
       });
 
       const response = await vocabService.bulkCreate(parsedImportData);
-      
+
       Swal.fire({
         icon: "success",
         title: "Hoàn tất!",
@@ -477,11 +481,11 @@ export default function VocabPage() {
               {currentRows.map((w) => (
                 <tr key={w.id} style={{ transition: "background-color 0.2s" }}>
                   <td style={{ padding: "12px 18px", fontStyle: "normal" }}>
-                    <div style={{ 
+                    <div style={{
                       fontFamily: "'DM Sans', sans-serif", // Sửa Font từ Syne thành DM Sans đẹp & chuyên nghiệp
-                      fontWeight: "700", 
-                      fontSize: "15px", 
-                      color: "var(--text)" 
+                      fontWeight: "700",
+                      fontSize: "15px",
+                      color: "var(--text)"
                     }}>
                       {w.word}
                     </div>
@@ -492,11 +496,10 @@ export default function VocabPage() {
                     )}
                   </td>
                   <td>
-                    <span className={`badge ${
-                      w.wordType === "noun" ? "blue" : 
-                      w.wordType === "verb" ? "green" : 
-                      w.wordType === "adjective" ? "orange" : "purple"
-                    }`}>
+                    <span className={`badge ${w.wordType === "noun" ? "blue" :
+                        w.wordType === "verb" ? "green" :
+                          w.wordType === "adjective" ? "orange" : "purple"
+                      }`}>
                       {w.wordType}
                     </span>
                   </td>
@@ -505,12 +508,11 @@ export default function VocabPage() {
                   </td>
                   <td style={{ textTransform: "capitalize", fontSize: "13px" }}>{w.topic}</td>
                   <td>
-                    <span className={`badge ${
-                      w.level === "350" ? "green" : 
-                      w.level === "450" ? "blue" : 
-                      w.level === "650" ? "orange" : 
-                      w.level === "800" ? "purple" : "red"
-                    }`}>
+                    <span className={`badge ${w.level === "350" ? "green" :
+                        w.level === "450" ? "blue" :
+                          w.level === "650" ? "orange" :
+                            w.level === "800" ? "purple" : "red"
+                      }`}>
                       TOEIC {w.level}+
                     </span>
                   </td>
@@ -551,7 +553,7 @@ export default function VocabPage() {
                 >
                   Trước
                 </button>
-                
+
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(page => Math.abs(page - currentPage) <= 1 || page === 1 || page === totalPages)
                   .map((page, idx, arr) => {
@@ -862,7 +864,7 @@ export default function VocabPage() {
                 <div style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>
                   Sử dụng file Excel, điền thông tin và Lưu dưới định dạng **CSV** (UTF-8) để nhập dữ liệu tối ưu nhất.
                 </div>
-                <button 
+                <button
                   onClick={downloadTemplate}
                   className="btn btn-secondary"
                   style={{ gap: "6px", fontSize: "12px", padding: "6px 12px", height: "32px", border: "1px dashed var(--accent)" }}
