@@ -247,7 +247,8 @@ export default function VocabPage() {
             confirmButtonColor: "var(--accent)",
             timer: 1500,
           });
-          fetchVocabularies();
+          // Cập nhật State cục bộ để xóa từ khỏi danh sách ngay lập tức trên UI mà không cần gọi API tải lại toàn bộ
+          setVocabList((prevList) => prevList.filter((item) => item.id !== vocab.id));
         } catch (error) {
           console.error("Lỗi khi xóa từ vựng:", error);
           Swal.fire({
