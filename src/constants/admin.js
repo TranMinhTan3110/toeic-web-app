@@ -9,7 +9,6 @@ export const NAV = [
   { id: "vocab",     label: "Quản lý Từ vựng",    icon: BookMarked,      badge: null  },
   { id: "exam",      label: "Quản lý Đề thi",      icon: FileText,        badge: "12"  },
   { id: "users",     label: "Quản lý Người dùng",  icon: Users,           badge: null  },
-  { id: "ai",        label: "Cấu hình AI",          icon: Bot,             badge: null  },
 ];
 
 export const PAGE_TITLES = {
@@ -18,7 +17,6 @@ export const PAGE_TITLES = {
   vocab:     "Quản lý Từ vựng",
   exam:      "Quản lý Đề thi",
   users:     "Quản lý Người dùng",
-  ai:        "Cấu hình AI",
 };
 
 export const NOTIFICATIONS = [

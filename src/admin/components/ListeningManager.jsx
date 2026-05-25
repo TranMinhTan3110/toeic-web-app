@@ -6,12 +6,12 @@ import {
 import LISTENING_CSS from "./ListeningManager.css.js";
 
 /** Phần nhập câu hỏi đơn — Part 1 & 2 */
-function SingleQuestionForm() {
-  const [part, setPart]                   = useState("1");
-  const [difficulty, setDifficulty]       = useState("Dễ");
-  const [isPlaying, setIsPlaying]         = useState(false);
-  const [question, setQuestion]           = useState("Look at the picture. What is the woman doing?");
-  const [options, setOptions]             = useState([
+function SingleQuestionForm({ notify }) {
+  const [part, setPart] = useState("1");
+  const [difficulty, setDifficulty] = useState("Dễ");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [question, setQuestion] = useState("Look at the picture. What is the woman doing?");
+  const [options, setOptions] = useState([
     "She is reading a book.",
     "She is using a computer.",
     "She is talking on the phone.",
@@ -20,7 +20,7 @@ function SingleQuestionForm() {
   const [selectedAnswer, setSelectedAnswer] = useState("A");
   const [explanationEn, setExplanationEn] = useState("");
   const [explanationVi, setExplanationVi] = useState("");
-  const [isAiLoading, setIsAiLoading]     = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const handleAI = () => {
     setIsAiLoading(true);
@@ -42,11 +42,36 @@ function SingleQuestionForm() {
     setSelectedAnswer("A"); setExplanationEn(""); setExplanationVi("");
   };
 
-  const handleSave = () => {
-    // TODO: gọi API lưu câu hỏi
-    const payload = { part, difficulty, question, options, answer: selectedAnswer, explanationEn, explanationVi };
-    console.log("Lưu câu hỏi:", payload);
-    alert("Đã lưu câu hỏi! (Xem console để kiểm tra payload)");
+  const handleSave = async () => {
+    try {
+      const difficultyMap = { "Dễ": "easy", "Trung bình": "medium", "Khó": "hard" };
+      const payload = {
+        part: parseInt(part, 10),
+        difficulty: difficultyMap[difficulty] || "medium",
+        questionText: question,
+        options: part === "2" ? options.slice(0, 3) : options,
+        correctAnswer: selectedAnswer,
+        explanation: explanationEn,
+        explanationVi: explanationVi,
+        script: part === "1" || part === "2" ? question : "",
+      };
+
+      const res = await fetch("http://localhost:5133/api/listening/admin/add-single", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        notify("success", "Đã lưu câu hỏi thành công! ID: " + data.id);
+        handleReset();
+      } else {
+        notify("error", "Lỗi khi lưu câu hỏi");
+      }
+    } catch (err) {
+      console.error(err);
+      notify("error", "Lỗi kết nối đến server!");
+    }
   };
 
   return (
@@ -59,138 +84,132 @@ function SingleQuestionForm() {
 
         <div className="lm-section">
           <div className="lm-section-title">Thông tin chung</div>
-        <div className="lm-form-row" style={{ marginBottom: 0 }}>
-          <div className="lm-form-group" style={{ margin: 0 }}>
-            <label className="lm-label">Chọn Part</label>
-            <select className="lm-select" value={part} onChange={e => setPart(e.target.value)}>
-              <option value="1">Part 1 — Tranh ảnh</option>
-              <option value="2">Part 2 — Hỏi đáp</option>
-            </select>
+          <div className="lm-form-row" style={{ marginBottom: 0 }}>
+            <div className="lm-form-group" style={{ margin: 0 }}>
+              <label className="lm-label">Chọn Part</label>
+              <select className="lm-select" value={part} onChange={e => setPart(e.target.value)}>
+                <option value="1">Part 1 — Tranh ảnh</option>
+                <option value="2">Part 2 — Hỏi đáp</option>
+              </select>
+            </div>
+            <div className="lm-form-group" style={{ margin: 0 }}>
+              <label className="lm-label">Độ khó</label>
+              <select className="lm-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+                <option>Dễ</option>
+                <option>Trung bình</option>
+                <option>Khó</option>
+              </select>
+            </div>
           </div>
-          <div className="lm-form-group" style={{ margin: 0 }}>
-            <label className="lm-label">Độ khó</label>
-            <select className="lm-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
-              <option>Dễ</option>
-              <option>Trung bình</option>
-              <option>Khó</option>
-            </select>
-          </div>
-        </div>
         </div>
 
         <div className="lm-section">
           <div className="lm-section-title">Tài liệu đính kèm</div>
-        {part === "1" && (
-          <div className="lm-form-group">
-            <label className="lm-label">Hình ảnh (Part 1)</label>
-            <div className="lm-upload">
-              <Upload />
-              <p>Kéo thả hoặc click để tải ảnh lên</p>
-              <p className="lm-hint">.jpg, .png — tối đa 5 MB</p>
+          {part === "1" && (
+            <div className="lm-form-group">
+              <label className="lm-label">Hình ảnh (Part 1)</label>
+              <div className="lm-upload">
+                <Upload />
+                <p>Kéo thả hoặc click để tải ảnh lên</p>
+                <p className="lm-hint">.jpg, .png — tối đa 5 MB</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Upload audio */}
-        <div className="lm-form-group">
-          <label className="lm-label">File âm thanh (.mp3)</label>
-          <div className="lm-upload">
-            <Volume2 />
-            <p>Tải file audio lên</p>
-          </div>
-          <div className="lm-audio-player">
-            <button
-              className="lm-play-btn"
-              onClick={() => setIsPlaying(!isPlaying)}
-              aria-label={isPlaying ? "Dừng" : "Phát"}
-            >
-              {isPlaying ? <Pause /> : <Play />}
-            </button>
-            <div className="lm-audio-bar">
-              <div className="lm-audio-progress" />
+          {/* Upload audio */}
+          <div className="lm-form-group">
+            <label className="lm-label">File âm thanh (.mp3)</label>
+            <div className="lm-upload">
+              <Volume2 />
+              <p>Tải file audio lên</p>
             </div>
-            <span className="lm-audio-time">0:18 / 0:52</span>
+            <div className="lm-audio-player">
+              <button
+                className="lm-play-btn"
+                onClick={() => setIsPlaying(!isPlaying)}
+                aria-label={isPlaying ? "Dừng" : "Phát"}
+              >
+                {isPlaying ? <Pause /> : <Play />}
+              </button>
+              <div className="lm-audio-bar">
+                <div className="lm-audio-progress" />
+              </div>
+              <span className="lm-audio-time">0:18 / 0:52</span>
+            </div>
           </div>
-        </div>
         </div>
 
         <div className="lm-section">
           <div className="lm-section-title">Nội dung câu hỏi</div>
-        <div className="lm-form-group" style={{ marginBottom: 0 }}>
-          <label className="lm-label">Câu hỏi</label>
-          <input
-            className="lm-input"
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-            placeholder="Nhập nội dung câu hỏi..."
-          />
-        </div>
+          <div className="lm-form-group" style={{ marginBottom: 0 }}>
+            <label className="lm-label">Câu hỏi</label>
+            <input
+              className="lm-input"
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              placeholder="Nhập nội dung câu hỏi..."
+            />
+          </div>
         </div>
 
         <div className="lm-section">
           <div className="lm-section-title">Các đáp án (chọn đáp án đúng bên phải)</div>
-        <div className="lm-form-group" style={{ marginBottom: 0 }}>
-          <label className="lm-label" style={{ marginBottom: 10 }}>Danh sách đáp án A – D</label>
-          {["A", "B", "C", "D"].map((letter, idx) => (
-            <div className="lm-option-row" key={letter}>
-              <div className={`lm-option-letter ${selectedAnswer === letter ? "correct" : ""}`}>
-                {letter}
+          <div className="lm-form-group" style={{ marginBottom: 0 }}>
+            <label className="lm-label" style={{ marginBottom: 10 }}>Danh sách đáp án {part === "2" ? "A – C" : "A – D"}</label>
+            {(part === "2" ? ["A", "B", "C"] : ["A", "B", "C", "D"]).map((letter, idx) => (
+              <div className="lm-option-row" key={letter}>
+                <div className={`lm-option-letter ${selectedAnswer === letter ? "correct" : ""}`}>
+                  {letter}
+                </div>
+                <input
+                  className="lm-input"
+                  style={{ flex: 1 }}
+                  value={options[idx]}
+                  onChange={e => {
+                    const o = [...options];
+                    o[idx] = e.target.value;
+                    setOptions(o);
+                  }}
+                  placeholder={`Đáp án ${letter}...`}
+                />
+                <input
+                  type="radio"
+                  className="lm-answer-radio"
+                  checked={selectedAnswer === letter}
+                  onChange={() => setSelectedAnswer(letter)}
+                  title={`Chọn ${letter} là đáp án đúng`}
+                />
               </div>
-              <input
-                className="lm-input"
-                style={{ flex: 1 }}
-                value={options[idx]}
-                onChange={e => {
-                  const o = [...options];
-                  o[idx] = e.target.value;
-                  setOptions(o);
-                }}
-                placeholder={`Đáp án ${letter}...`}
-              />
-              <input
-                type="radio"
-                className="lm-answer-radio"
-                checked={selectedAnswer === letter}
-                onChange={() => setSelectedAnswer(letter)}
-                title={`Chọn ${letter} là đáp án đúng`}
-              />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         </div>
 
         <div className="lm-section">
           <div className="lm-section-title">Giải thích</div>
-        <div className="lm-form-group">
-          <label className="lm-label">Giải thích (English)</label>
-          <textarea
-            className="lm-textarea"
-            rows={3}
-            value={explanationEn}
-            onChange={e => setExplanationEn(e.target.value)}
-            placeholder="Enter explanation in English..."
-          />
-        </div>
-
-        {/* Giải thích Tiếng Việt + AI button */}
-        <div className="lm-form-group">
-          <div className="lm-label-row">
-            <label className="lm-label" style={{ margin: 0 }}>Giải thích (Tiếng Việt)</label>
-            <button className="lm-ai-btn" onClick={handleAI} disabled={isAiLoading}>
-              {isAiLoading
-                ? <Loader2 size={12} className="lm-spinning" />
-                : <Bot size={12} />}
-              {isAiLoading ? "AI đang phân tích..." : "AI dịch & giải thích tự động"}
-            </button>
+          <div className="lm-form-group">
+            <label className="lm-label">Giải thích (English)</label>
+            <textarea
+              className="lm-textarea"
+              rows={3}
+              value={explanationEn}
+              onChange={e => setExplanationEn(e.target.value)}
+              placeholder="Enter explanation in English..."
+            />
           </div>
-          <textarea
-            className="lm-textarea"
-            rows={4}
-            value={explanationVi}
-            onChange={e => setExplanationVi(e.target.value)}
-            placeholder="Giải thích tiếng Việt sẽ xuất hiện ở đây..."
-          />
-        </div>
+
+          {/* Giải thích Tiếng Việt + AI button */}
+          <div className="lm-form-group">
+            <div className="lm-label-row">
+              <label className="lm-label" style={{ margin: 0 }}>Giải thích (Tiếng Việt)</label>
+            </div>
+            <textarea
+              className="lm-textarea"
+              rows={4}
+              value={explanationVi}
+              onChange={e => setExplanationVi(e.target.value)}
+              placeholder="Giải thích tiếng Việt sẽ xuất hiện ở đây..."
+            />
+          </div>
         </div>
 
         <div className="lm-form-actions">
@@ -206,39 +225,39 @@ function SingleQuestionForm() {
           <h2 className="lm-card-title">Xem trước</h2>
           <p className="lm-card-desc">Giao diện học viên khi làm bài</p>
         </div>
-      <div className="lm-preview">
-        <div className="lm-preview-title">Preview</div>
-        <div className="lm-preview-media">
-          {part === "1"
-            ? <span>📷 Ảnh minh họa</span>
-            : <Volume2 size={32} style={{ opacity: 0.35 }} />}
-        </div>
-        <div className="lm-preview-card">
-          <div className="lm-preview-q">{question}</div>
-          {["A", "B", "C", "D"].map((l, i) => (
-            <div
-              key={l}
-              className={`lm-preview-opt ${selectedAnswer === l ? "selected" : ""}`}
-            >
-              <span style={{ fontWeight: 700, marginRight: 6 }}>{l}.</span>
-              {options[i] || `Đáp án ${l}`}
+        <div className="lm-preview">
+          <div className="lm-preview-title">Preview</div>
+          <div className="lm-preview-media">
+            {part === "1"
+              ? <span>📷 Ảnh minh họa</span>
+              : <Volume2 size={32} style={{ opacity: 0.35 }} />}
+          </div>
+          <div className="lm-preview-card">
+            <div className="lm-preview-q">{question}</div>
+            {["A", "B", "C", "D"].map((l, i) => (
+              <div
+                key={l}
+                className={`lm-preview-opt ${selectedAnswer === l ? "selected" : ""}`}
+              >
+                <span style={{ fontWeight: 700, marginRight: 6 }}>{l}.</span>
+                {options[i] || `Đáp án ${l}`}
+              </div>
+            ))}
+          </div>
+          <div className="lm-preview-explanation">
+            <div className="lm-preview-explanation-label">GIẢI THÍCH</div>
+            <div className="lm-preview-explanation-text">
+              {explanationVi || "Sẽ hiển thị giải thích ở đây..."}
             </div>
-          ))}
-        </div>
-        <div className="lm-preview-explanation">
-          <div className="lm-preview-explanation-label">GIẢI THÍCH</div>
-          <div className="lm-preview-explanation-text">
-            {explanationVi || "Sẽ hiển thị giải thích ở đây..."}
           </div>
         </div>
-      </div>
       </div>
     </div>
   );
 }
 
 /** Câu hỏi nhóm — Part 3 & 4 */
-function GroupQuestionForm() {
+function GroupQuestionForm({ notify }) {
   const [groups, setGroups] = useState([
     {
       id: 1,
@@ -290,9 +309,47 @@ function GroupQuestionForm() {
     setGroups(gs);
   };
 
-  const handleSaveAll = () => {
-    console.log("Lưu tất cả nhóm:", groups);
-    alert("Đã lưu! (Xem console để kiểm tra payload)");
+  const handleSaveAll = async () => {
+    try {
+      for (const g of groups) {
+        const partNum = g.part.includes("Part 3") ? 3 : 4;
+        
+        const payload = {
+          part: partNum,
+          script: g.transcript,
+          passageText: "",
+          questions: g.subQuestions.map(sq => ({
+            part: partNum,
+            questionText: sq.q,
+            options: sq.opts,
+            correctAnswer: sq.ans,
+            difficulty: "medium"
+          }))
+        };
+
+        const res = await fetch("http://localhost:5133/api/listening/admin/add-group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error("Failed to save group");
+      }
+      notify("success", "Đã lưu thành công tất cả các nhóm!");
+      setGroups([{
+        id: Date.now(),
+        part: "Part 3 — Hội thoại",
+        transcript: "",
+        subQuestions: [
+          { q: "", opts: ["", "", "", ""], ans: "A" },
+          { q: "", opts: ["", "", "", ""], ans: "A" },
+          { q: "", opts: ["", "", "", ""], ans: "A" },
+        ],
+      }]);
+    } catch (err) {
+      console.error(err);
+      notify("error", "Lỗi kết nối hoặc lưu câu hỏi thất bại!");
+    }
   };
 
   return (
@@ -414,6 +471,12 @@ function GroupQuestionForm() {
 
 export default function ListeningManager({ onBack }) {
   const [tab, setTab] = useState("single");
+  const [notification, setNotification] = useState(null);
+
+  const notify = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3500);
+  };
 
   return (
     <>
@@ -453,9 +516,33 @@ export default function ListeningManager({ onBack }) {
         </div>
 
         <div className="lm-content-panel">
-          {tab === "single" && <SingleQuestionForm />}
-          {tab === "group"  && <GroupQuestionForm />}
+          {tab === "single" && <SingleQuestionForm notify={notify} />}
+          {tab === "group" && <GroupQuestionForm notify={notify} />}
         </div>
+        
+        {/* Custom Notification Toast */}
+        {notification && (
+          <div className="fade-in" style={{
+            position: "fixed", top: 32, right: 32, zIndex: 99999,
+            backgroundColor: notification.type === "success" ? "#ecfdf5" : "#fef2f2",
+            border: `1px solid ${notification.type === "success" ? "#10b981" : "#ef4444"}`,
+            color: notification.type === "success" ? "#065f46" : "#991b1b",
+            padding: "16px 20px", borderRadius: 8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+            display: "flex", alignItems: "center", gap: 12
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 14,
+              backgroundColor: notification.type === "success" ? "#10b981" : "#ef4444",
+              color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0
+            }}>
+              {notification.type === "success" ? <Check size={16} /> : <X size={16} />}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.4 }}>
+              {notification.message}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

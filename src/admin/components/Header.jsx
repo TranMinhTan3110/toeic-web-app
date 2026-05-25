@@ -1,21 +1,18 @@
 import React from 'react';
 import { useRef, useState, useEffect } from "react";
 import {
-  Search, Bell, Sun, Moon, ChevronDown,
+  Search, ChevronDown,
   User, Settings, BarChart3, LogOut
 } from "lucide-react";
-import { PAGE_TITLES, NOTIFICATIONS } from "../../constants/admin.js";
+import { PAGE_TITLES } from "../../constants/admin.js";
 
 export default function Header({ page, dark, setDark }) {
-  const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const notifRef = useRef(null);
   const profileRef = useRef(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
     const handler = e => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
     };
     document.addEventListener("mousedown", handler);
@@ -32,48 +29,12 @@ export default function Header({ page, dark, setDark }) {
       </div>
 
       <div className="header-actions">
-        {/* Dark mode */}
-        <button className="icon-btn" onClick={() => setDark(d => !d)} title="Chế độ tối/sáng">
-          {dark ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-
-        {/* Notifications */}
-        <div className="dropdown-wrapper" ref={notifRef}>
-          <button
-            className="icon-btn"
-            onClick={() => { setShowNotif(v => !v); setShowProfile(false); }}
-          >
-            <Bell size={16} />
-            <span className="notif-dot" />
-          </button>
-          {showNotif && (
-            <div className="dropdown notif-dropdown">
-              <div className="dropdown-header">
-                <span>Thông báo</span>
-                <span style={{ fontSize: 11, color: "var(--accent)", cursor: "pointer" }}>
-                  Đánh dấu đã đọc
-                </span>
-              </div>
-              {NOTIFICATIONS.map(n => (
-                <div key={n.title} className="notif-item">
-                  <div className="notif-icon" style={{ background: n.bg }}>
-                    <n.icon size={16} color={n.color} />
-                  </div>
-                  <div className="notif-text">
-                    <div className="notif-title">{n.title}</div>
-                    <div className="notif-time">{n.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Profile */}
         <div className="dropdown-wrapper" ref={profileRef}>
           <button
             className="profile-btn"
-            onClick={() => { setShowProfile(v => !v); setShowNotif(false); }}
+            onClick={() => { setShowProfile(v => !v); }}
           >
             <div className="avatar">TA</div>
             <div className="profile-info">
