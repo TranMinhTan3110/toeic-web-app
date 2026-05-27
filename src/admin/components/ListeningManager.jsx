@@ -10,7 +10,7 @@ import { uploadToCloudinary } from "../../utils/cloudinary.js";
 import Swal from "sweetalert2";
 
 /** Phần nhập câu hỏi đơn — Part 1 & 2 */
-function SingleQuestionForm({ notify }) {
+function SingleQuestionForm({ notify, onBack }) {
   const [part, setPart] = useState("1");
   const [difficulty, setDifficulty] = useState("Dễ");
 
@@ -185,8 +185,13 @@ function SingleQuestionForm({ notify }) {
       }
 
       if (res.ok && data?.success) {
-        notify("success", "Đã lưu câu hỏi thành công! ID: " + data.id);
+        notify("success", "Đã lưu câu hỏi thành công! Đang quay lại trang quản lý...");
         handleReset();
+        if (onBack) {
+          setTimeout(() => {
+            onBack();
+          }, 1500);
+        }
       } else {
         const errMsg = data?.message || "Lỗi lưu câu hỏi vào hệ thống.";
         notify("error", errMsg);
@@ -508,7 +513,7 @@ function SingleQuestionForm({ notify }) {
 }
 
 /** Câu hỏi nhóm — Part 3 & 4 */
-function GroupQuestionForm({ notify }) {
+function GroupQuestionForm({ notify, onBack }) {
   const [groups, setGroups] = useState([
     {
       id: Date.now(),
@@ -667,7 +672,7 @@ function GroupQuestionForm({ notify }) {
         }
       }
 
-      notify("success", "Đã lưu thành công tất cả các nhóm câu hỏi!");
+      notify("success", "Đã lưu thành công tất cả các nhóm câu hỏi! Đang quay lại trang quản lý...");
       setGroups([
         {
           id: Date.now(),
@@ -681,6 +686,11 @@ function GroupQuestionForm({ notify }) {
           ],
         },
       ]);
+      if (onBack) {
+        setTimeout(() => {
+          onBack();
+        }, 1500);
+      }
     } catch (err) {
       console.error(err);
       notify("error", err.message || "Lỗi lưu câu hỏi nhóm!");
@@ -923,8 +933,8 @@ export default function ListeningManager({ onBack }) {
         </div>
 
         <div className="lm-content-panel">
-          {tab === "single" && <SingleQuestionForm notify={notify} />}
-          {tab === "group" && <GroupQuestionForm notify={notify} />}
+          {tab === "single" && <SingleQuestionForm notify={notify} onBack={onBack} />}
+          {tab === "group" && <GroupQuestionForm notify={notify} onBack={onBack} />}
         </div>
 
         {/* Custom Notification Toast */}

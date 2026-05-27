@@ -307,26 +307,52 @@ export default function ProfilePage() {
                   </div>
                   
                   {/* Preset Selector */}
-                  <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", maxWidth: 240, margin: "10px auto 0 auto" }}>
                     {[
+                      // Adventurer Series
                       "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
                       "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack",
                       "https://api.dicebear.com/7.x/adventurer/svg?seed=Cookie",
-                      "https://api.dicebear.com/7.x/adventurer/svg?seed=Milo"
+                      "https://api.dicebear.com/7.x/adventurer/svg?seed=Milo",
+                      "https://api.dicebear.com/7.x/adventurer/svg?seed=Bear",
+                      "https://api.dicebear.com/7.x/adventurer/svg?seed=Buster",
+                      // Avataaars Series
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Sasha",
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Leo",
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Whiskers",
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Tigger",
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Jasper",
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Cleo",
+                      // Lorelei (Anime/Chibi) Series
+                      "https://api.dicebear.com/7.x/lorelei/svg?seed=Angel",
+                      "https://api.dicebear.com/7.x/lorelei/svg?seed=Daisy",
+                      "https://api.dicebear.com/7.x/lorelei/svg?seed=Princess",
+                      "https://api.dicebear.com/7.x/lorelei/svg?seed=Bella",
+                      "https://api.dicebear.com/7.x/lorelei/svg?seed=Gracie",
+                      "https://api.dicebear.com/7.x/lorelei/svg?seed=Coco",
+                      // Bottts (Robots) Series
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=Gizmo",
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=Buster",
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=Sparky",
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=Rusty",
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=Bolt",
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=Zippy"
                     ].map((preset, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setAvatarUrl(preset)}
                         style={{
-                          width: 32,
-                          height: 32,
+                          width: 34,
+                          height: 34,
                           borderRadius: "50%",
                           border: avatarUrl === preset ? "2px solid var(--accent)" : "1px solid var(--border)",
+                          boxShadow: avatarUrl === preset ? "0 0 8px rgba(255, 107, 53, 0.4)" : "none",
                           overflow: "hidden",
                           cursor: "pointer",
                           padding: 0,
-                          background: "#fff"
+                          background: "#fff",
+                          transition: "all 0.2s ease"
                         }}
                       >
                         <img src={preset} alt="preset" style={{ width: "100%", height: "100%" }} />
