@@ -17,6 +17,7 @@ export const PAGE_TITLES = {
   vocab: "Quản lý Từ vựng",
   exam: "Quản lý Đề thi",
   users: "Quản lý Người dùng",
+  profile: "Thông tin tài khoản",
 };
 
 export const NOTIFICATIONS = [

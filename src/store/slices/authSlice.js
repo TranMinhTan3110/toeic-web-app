@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   user: null, // { displayName, email, photoURL, uid }
+  profile: null, // Thông tin tài khoản chi tiết từ backend (được lưu cache)
   token: null,
   isAuthenticated: false,
   isAdmin: false,
@@ -29,8 +30,12 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    setProfileSuccess: (state, action) => {
+      state.profile = action.payload;
+    },
     setAuthFailure: (state, action) => {
       state.user = null;
+      state.profile = null;
       state.token = null;
       state.isAuthenticated = false;
       state.isAdmin = false;
@@ -39,6 +44,7 @@ const authSlice = createSlice({
     },
     logoutSuccess: (state) => {
       state.user = null;
+      state.profile = null;
       state.token = null;
       state.isAuthenticated = false;
       state.isAdmin = false;
@@ -57,6 +63,7 @@ const authSlice = createSlice({
 export const {
   setAuthStart,
   setAuthSuccess,
+  setProfileSuccess,
   setAuthFailure,
   logoutSuccess,
   clearError,

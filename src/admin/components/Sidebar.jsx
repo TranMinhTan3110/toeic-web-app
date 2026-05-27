@@ -41,9 +41,14 @@ export default function Sidebar({ collapsed, setCollapsed, page, setPage }) {
         <div className="nav-section-label" style={{ marginTop: 12 }}>
           Hệ thống
         </div>
-        <div className="nav-item">
+        <div
+          className={`nav-item${page === "profile" ? " active" : ""}`}
+          onClick={() => setPage("profile")}
+          style={{ cursor: "pointer" }}
+          title={collapsed ? "Thông tin tài khoản" : ""}
+        >
           <Settings className="nav-icon" size={18} />
-          <span className="nav-label">Cài đặt</span>
+          <span className="nav-label">Thông tin tài khoản</span>
         </div>
       </nav>
 

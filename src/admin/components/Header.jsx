@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import { PAGE_TITLES } from "../../constants/admin.js";
 
-export default function Header({ page, dark, setDark }) {
-  const { user } = useSelector((state) => state.auth);
+export default function Header({ page, setPage, dark, setDark }) {
+  const { user, profile } = useSelector((state) => state.auth);
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const profileRef = useRef(null);
@@ -83,8 +83,9 @@ export default function Header({ page, dark, setDark }) {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const adminName = user?.displayName || "Tuấn Admin";
-  const adminEmail = user?.email || "admin@toeicmaster.vn";
+  const adminName = profile?.displayName || user?.displayName || "Học viên TOEIC";
+  const adminEmail = profile?.email || user?.email || "hocvien@toeicmaster.vn";
+  const adminRole = profile?.role === "admin" ? "Super Admin" : (profile?.role === "teacher" ? "Giáo viên" : "Học viên");
 
   return (
     <header className="header">
@@ -103,10 +104,16 @@ export default function Header({ page, dark, setDark }) {
             className="profile-btn"
             onClick={() => { setShowProfile(v => !v); }}
           >
-            <div className="avatar">{getInitials(adminName)}</div>
+            <div className="avatar" style={{ overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {profile?.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                getInitials(adminName)
+              )}
+            </div>
             <div className="profile-info">
               <div className="profile-name">{adminName}</div>
-              <div className="profile-role">Super Admin</div>
+              <div className="profile-role">{adminRole}</div>
             </div>
             <ChevronDown size={14} color="var(--text-tertiary)" />
           </button>
@@ -116,8 +123,18 @@ export default function Header({ page, dark, setDark }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{adminName}</div>
                 <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{adminEmail}</div>
               </div>
-              <div className="dropdown-item"><User size={16} />Hồ sơ cá nhân</div>
-              <div className="dropdown-item"><Settings size={16} />Cài đặt tài khoản</div>
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof setPage === "function") {
+                    setPage("profile");
+                  }
+                  setShowProfile(false);
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                <User size={16} />Hồ sơ cá nhân
+              </div>
               <div className="dropdown-item"><BarChart3 size={16} />Nhật ký hoạt động</div>
               <div className="dropdown-divider" />
               <div

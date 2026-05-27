@@ -22,3 +22,13 @@ export const unlockUser = async (userId) => {
   const response = await apiClient.post(`/users/admin/unlock/${userId}`);
   return response.data;
 };
+
+export const getProfile = async () => {
+  const response = await apiClient.get("/users/me");
+  return response.data;
+};
+
+export const updateProfile = async (profileData) => {
+  const response = await apiClient.patch("/users/me", profileData);
+  return response.data;
+};

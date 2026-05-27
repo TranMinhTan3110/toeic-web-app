@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./config/firebase";
-import { setAuthSuccess, logoutSuccess, setLoading } from "./store/slices/authSlice";
+import { setAuthSuccess, setProfileSuccess, logoutSuccess, setLoading } from "./store/slices/authSlice";
 import authService from "./services/authService";
+import { getProfile } from "./services/userService";
 import AppRouter from "./routes/AppRouter";
 
 export default function App() {
@@ -31,6 +32,14 @@ export default function App() {
               token,
             })
           );
+
+          // Tải thông tin tài khoản chi tiết từ backend (cache trong Redux)
+          try {
+            const profile = await getProfile();
+            dispatch(setProfileSuccess(profile));
+          } catch (profileError) {
+            console.error("Lỗi khi lấy thông tin chi tiết user:", profileError);
+          }
         } catch (error) {
           console.error("Đồng bộ user thất bại:", error);
           // Vẫn cho phép vào app bằng thông tin Firebase cục bộ nếu Backend offline tạm thời
