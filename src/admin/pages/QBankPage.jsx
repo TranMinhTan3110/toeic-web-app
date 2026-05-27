@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import {
   Search, Filter, Download, Upload, PlusCircle, Edit3, Trash2,
   Headphones, Mic, PenLine, BookOpen, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import ListeningManager from "../components/ListeningManager.jsx";
+
 
 // ─── Data per skill ────────────────────────────────────────────────────────
 const SKILL_DATA = {
@@ -196,7 +198,15 @@ function SkillQuestions({ skillId }) {
             style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
             onClick={() => {
               if (skillId === "listening") setView("add");
-              else alert(`Giao diện thêm câu hỏi ${skill.label} đang được phát triển.`);
+              else {
+                Swal.fire({
+                  title: "Thông báo",
+                  text: `Giao diện thêm câu hỏi kỹ năng ${skill.label} đang được phát triển.`,
+                  icon: "info",
+                  confirmButtonText: "Đồng ý",
+                  confirmButtonColor: "var(--accent)"
+                });
+              }
             }}
           >
             <PlusCircle size={15} />Thêm câu hỏi
@@ -350,7 +360,13 @@ function SkillQuestions({ skillId }) {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 8 }}>
                 <button className="btn btn-secondary" onClick={() => setEditingQuestion(null)}>Hủy</button>
                 <button className="btn btn-primary" onClick={() => { 
-                  alert("Đã lưu thay đổi vào hệ thống (giả lập)!"); 
+                  Swal.fire({
+                    title: "Thành công!",
+                    text: "Đã lưu thay đổi vào hệ thống (giả lập)!",
+                    icon: "success",
+                    confirmButtonText: "Đồng ý",
+                    confirmButtonColor: "var(--accent)"
+                  });
                   setEditingQuestion(null); 
                 }} style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}>
                   Lưu thay đổi
@@ -374,10 +390,53 @@ function SkillQuestions({ skillId }) {
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setDeletingQuestion(null)}>Hủy bỏ</button>
-              <button className="btn btn-primary" style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }} onClick={() => {
-                alert(`Đã xóa câu hỏi ${deletingQuestion.id} thành công!`);
-                setDeletingQuestion(null);
-              }}>Xóa câu hỏi</button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }} 
+                onClick={async () => {
+                  const targetId = deletingQuestion.id;
+                  try {
+                    const res = await fetch(`http://localhost:5133/api/listening/admin/${targetId}`, {
+                      method: "DELETE"
+                    });
+                    
+                    if (res.ok) {
+                      setListeningData(prev => ({
+                        ...prev,
+                        questions: prev.questions.filter(q => q.id !== targetId)
+                      }));
+
+                      Swal.fire({
+                        title: "Đã xóa!",
+                        text: `Đã xóa câu hỏi ${deletingQuestion.displayId || targetId} thành công!`,
+                        icon: "success",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "#ef4444"
+                      });
+                    } else {
+                      Swal.fire({
+                        title: "Lỗi",
+                        text: "Không thể xóa câu hỏi trên hệ thống.",
+                        icon: "error",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "#ef4444"
+                      });
+                    }
+                  } catch (err) {
+                    console.error("Delete error:", err);
+                    Swal.fire({
+                      title: "Lỗi kết nối",
+                      text: "Không thể kết nối đến máy chủ.",
+                      icon: "error",
+                      confirmButtonText: "Đồng ý",
+                      confirmButtonColor: "#ef4444"
+                    });
+                  }
+                  setDeletingQuestion(null);
+                }}
+              >
+                Xóa câu hỏi
+              </button>
             </div>
           </div>
         </div>

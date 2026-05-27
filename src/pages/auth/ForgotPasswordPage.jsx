@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../config/firebase";
+import Swal from "sweetalert2";
 import "../../styles/auth.css";
 import {
   MailIcon, AppIcon,
@@ -11,15 +14,51 @@ export default function ForgotPasswordPage() {
   const [emailFocus, setEmailFocus] = useState(false);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    setErrorMsg("");
+
+    try {
+      // Gọi Firebase gửi email khôi phục mật khẩu
+      await sendPasswordResetEmail(auth, email);
       setSent(true);
-    }, 1000);
+      
+      Swal.fire({
+        icon: "success",
+        title: "Đã gửi email khôi phục!",
+        text: `Vui lòng kiểm tra hộp thư của ${email}.`,
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+      });
+    } catch (error) {
+      console.error("Lỗi khi gửi email khôi phục:", error);
+      let msg = "";
+      switch (error.code) {
+        case "auth/invalid-email":
+          msg = "Địa chỉ email không hợp lệ.";
+          break;
+        case "auth/user-not-found":
+          msg = "Không tìm thấy tài khoản liên kết với email này.";
+          break;
+        default:
+          msg = "Gửi yêu cầu thất bại. Vui lòng thử lại sau!";
+      }
+      setErrorMsg(msg);
+      Swal.fire({
+        icon: "error",
+        title: "Gửi yêu cầu thất bại",
+        text: msg,
+        confirmButtonColor: "#FF6B35",
+        background: "#1e1b4b",
+        color: "#fff",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,10 +96,18 @@ export default function ForgotPasswordPage() {
       <div className="right">
         <div className="fb">
           {!sent ? (
-            /* ── Step 1: Enter email ── */
+            /* ── Step 1: Nhập email gửi yêu cầu ── */
             <>
               <h1 className="ftit">Quên mật khẩu?</h1>
               <p className="fsub">Nhập email để nhận link đặt lại mật khẩu</p>
+
+              {/* Báo lỗi nếu có */}
+              {errorMsg && (
+                <div className="auth-error-alert" style={errorAlertStyle}>
+                  <span style={{ marginRight: "8px" }}>⚠️</span>
+                  {errorMsg}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="fld">
@@ -78,12 +125,17 @@ export default function ForgotPasswordPage() {
                       onBlur={() => setEmailFocus(false)}
                       autoComplete="email"
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
 
                 <button type="submit" className="btn-l" disabled={loading}>
-                  {loading ? "Đang gửi…" : "Gửi link đặt lại mật khẩu"}
+                  {loading ? (
+                    <span className="auth-spinner" style={spinnerStyle}></span>
+                  ) : (
+                    "Gửi link đặt lại mật khẩu"
+                  )}
                 </button>
               </form>
 
@@ -95,7 +147,7 @@ export default function ForgotPasswordPage() {
               </div>
             </>
           ) : (
-            /* ── Step 2: Email sent success ── */
+            /* ── Step 2: Gửi email thành công ── */
             <div className="success-wrap">
               <div className="success-ico">
                 <CheckIcon />
@@ -104,16 +156,21 @@ export default function ForgotPasswordPage() {
               <h1 className="success-title">Đã gửi email!</h1>
               <p className="success-desc">
                 Chúng tôi đã gửi link đặt lại mật khẩu đến<br />
-                <span className="success-email">{email}</span>.<br />
+                <strong style={{ color: "#FF6B35" }}>{email}</strong>.<br />
                 Vui lòng kiểm tra hộp thư (kể cả thư mục Spam).
               </p>
 
               <button
                 className="btn-l"
-                onClick={() => { setSent(false); }}
+                onClick={handleSubmit}
+                disabled={loading}
                 style={{ marginTop: 0 }}
               >
-                Gửi lại email
+                {loading ? (
+                  <span className="auth-spinner" style={spinnerStyle}></span>
+                ) : (
+                  "Gửi lại email"
+                )}
               </button>
 
               <div className="back-row" style={{ marginTop: 18 }}>
@@ -129,3 +186,29 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+
+// Style alert lỗi
+const errorAlertStyle = {
+  background: "rgba(239, 68, 68, 0.1)",
+  border: "1px solid rgba(239, 68, 68, 0.2)",
+  color: "#ef4444",
+  padding: "0.8rem 1rem",
+  borderRadius: "12px",
+  fontSize: "0.9rem",
+  marginBottom: "1.5rem",
+  display: "flex",
+  alignItems: "center",
+  width: "100%",
+  boxSizing: "border-box",
+  fontFamily: "'Outfit', 'Inter', sans-serif"
+};
+
+const spinnerStyle = {
+  display: "inline-block",
+  width: "20px",
+  height: "20px",
+  border: "3px solid rgba(255,255,255,0.3)",
+  borderRadius: "50%",
+  borderTopColor: "#fff",
+  animation: "spin 1s ease-in-out infinite",
+};
