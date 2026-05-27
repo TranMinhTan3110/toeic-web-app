@@ -13,7 +13,7 @@ import Swal from "sweetalert2";
 function SingleQuestionForm({ notify }) {
   const [part, setPart] = useState("1");
   const [difficulty, setDifficulty] = useState("Dễ");
-  
+
   const [question, setQuestion] = useState("Look at the picture. What is the woman doing?");
   const [options, setOptions] = useState([
     "She is reading a book.",
@@ -221,7 +221,7 @@ function SingleQuestionForm({ notify }) {
 
         <div className="lm-section">
           <div className="lm-section-title">Tài liệu đính kèm</div>
-          
+
           {/* Custom Image Upload for Part 1 */}
           {part === "1" && (
             <div className="lm-form-group">
@@ -239,28 +239,28 @@ function SingleQuestionForm({ notify }) {
                   }
                 }}
               />
-              <div 
-                className="lm-upload" 
+              <div
+                className="lm-upload"
                 style={{ cursor: "pointer", position: "relative", minHeight: 120, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
                 onClick={() => document.getElementById("single-image-input").click()}
               >
                 {imagePreview ? (
                   <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 10 }}>
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 8, objectFit: "contain" }} 
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 8, objectFit: "contain" }}
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setImageFile(null);
                         setImagePreview("");
                       }}
                       style={{
-                        position: "absolute", top: 4, right: 4, 
-                        background: "rgba(239, 68, 68, 0.9)", border: "none", 
+                        position: "absolute", top: 4, right: 4,
+                        background: "rgba(239, 68, 68, 0.9)", border: "none",
                         borderRadius: "50%", color: "white", padding: 4, cursor: "pointer", display: "flex"
                       }}
                     >
@@ -294,7 +294,7 @@ function SingleQuestionForm({ notify }) {
                 }
               }}
             />
-            <div 
+            <div
               className="lm-upload"
               style={{ cursor: "pointer", position: "relative", padding: audioFile ? "15px" : "20px" }}
               onClick={() => document.getElementById("single-audio-input").click()}
@@ -310,14 +310,14 @@ function SingleQuestionForm({ notify }) {
                       {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
                   </div>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setAudioFile(null);
                     }}
                     style={{
-                      background: "rgba(239, 68, 68, 0.9)", border: "none", 
+                      background: "rgba(239, 68, 68, 0.9)", border: "none",
                       borderRadius: "50%", color: "white", padding: 4, cursor: "pointer", display: "flex"
                     }}
                   >
@@ -343,7 +343,7 @@ function SingleQuestionForm({ notify }) {
                 >
                   {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                 </button>
-                <div 
+                <div
                   className="lm-audio-bar"
                   onClick={(e) => {
                     if (!audioElement || duration === 0) return;
@@ -355,8 +355,8 @@ function SingleQuestionForm({ notify }) {
                   }}
                   style={{ cursor: "pointer", flex: 1, margin: "0 12px" }}
                 >
-                  <div 
-                    className="lm-audio-progress" 
+                  <div
+                    className="lm-audio-progress"
                     style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
                   />
                 </div>
@@ -489,188 +489,6 @@ function SingleQuestionForm({ notify }) {
           <div className="lm-preview-explanation">
             <div className="lm-preview-explanation-label">GIẢI THÍCH</div>
             <div className="lm-preview-explanation-text" style={{ whiteSpace: "pre-line" }}>
-              {explanationVi || "Sẽ hiển thị giải thích ở đây..."}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-  return (
-    <div className="lm-two-col">
-      <div className="lm-card">
-        <div className="lm-card-head">
-          <h2 className="lm-card-title">Nhập liệu câu hỏi</h2>
-          <p className="lm-card-desc">Điền đủ thông tin Part, file đính kèm, đáp án và giải thích</p>
-        </div>
-
-        <div className="lm-section">
-          <div className="lm-section-title">Thông tin chung</div>
-          <div className="lm-form-row" style={{ marginBottom: 0 }}>
-            <div className="lm-form-group" style={{ margin: 0 }}>
-              <label className="lm-label">Chọn Part</label>
-              <select className="lm-select" value={part} onChange={e => setPart(e.target.value)}>
-                <option value="1">Part 1 — Tranh ảnh</option>
-                <option value="2">Part 2 — Hỏi đáp</option>
-              </select>
-            </div>
-            <div className="lm-form-group" style={{ margin: 0 }}>
-              <label className="lm-label">Độ khó</label>
-              <select className="lm-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
-                <option>Dễ</option>
-                <option>Trung bình</option>
-                <option>Khó</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="lm-section">
-          <div className="lm-section-title">Tài liệu đính kèm</div>
-          {part === "1" && (
-            <div className="lm-form-group">
-              <label className="lm-label">Hình ảnh (Part 1)</label>
-              <div className="lm-upload">
-                <Upload />
-                <p>Kéo thả hoặc click để tải ảnh lên</p>
-                <p className="lm-hint">.jpg, .png — tối đa 5 MB</p>
-              </div>
-            </div>
-          )}
-
-          {/* Upload audio */}
-          <div className="lm-form-group">
-            <label className="lm-label">File âm thanh (.mp3)</label>
-            <div className="lm-upload">
-              <Volume2 />
-              <p>Tải file audio lên</p>
-            </div>
-            <div className="lm-audio-player">
-              <button
-                className="lm-play-btn"
-                onClick={() => setIsPlaying(!isPlaying)}
-                aria-label={isPlaying ? "Dừng" : "Phát"}
-              >
-                {isPlaying ? <Pause /> : <Play />}
-              </button>
-              <div className="lm-audio-bar">
-                <div className="lm-audio-progress" />
-              </div>
-              <span className="lm-audio-time">0:18 / 0:52</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="lm-section">
-          <div className="lm-section-title">Nội dung câu hỏi</div>
-          <div className="lm-form-group" style={{ marginBottom: 0 }}>
-            <label className="lm-label">Câu hỏi</label>
-            <input
-              className="lm-input"
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              placeholder="Nhập nội dung câu hỏi..."
-            />
-          </div>
-        </div>
-
-        <div className="lm-section">
-          <div className="lm-section-title">Các đáp án (chọn đáp án đúng bên phải)</div>
-          <div className="lm-form-group" style={{ marginBottom: 0 }}>
-            <label className="lm-label" style={{ marginBottom: 10 }}>Danh sách đáp án {part === "2" ? "A – C" : "A – D"}</label>
-            {(part === "2" ? ["A", "B", "C"] : ["A", "B", "C", "D"]).map((letter, idx) => (
-              <div className="lm-option-row" key={letter}>
-                <div className={`lm-option-letter ${selectedAnswer === letter ? "correct" : ""}`}>
-                  {letter}
-                </div>
-                <input
-                  className="lm-input"
-                  style={{ flex: 1 }}
-                  value={options[idx]}
-                  onChange={e => {
-                    const o = [...options];
-                    o[idx] = e.target.value;
-                    setOptions(o);
-                  }}
-                  placeholder={`Đáp án ${letter}...`}
-                />
-                <input
-                  type="radio"
-                  className="lm-answer-radio"
-                  checked={selectedAnswer === letter}
-                  onChange={() => setSelectedAnswer(letter)}
-                  title={`Chọn ${letter} là đáp án đúng`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="lm-section">
-          <div className="lm-section-title">Giải thích</div>
-          <div className="lm-form-group">
-            <label className="lm-label">Giải thích (English)</label>
-            <textarea
-              className="lm-textarea"
-              rows={3}
-              value={explanationEn}
-              onChange={e => setExplanationEn(e.target.value)}
-              placeholder="Enter explanation in English..."
-            />
-          </div>
-
-          {/* Giải thích Tiếng Việt + AI button */}
-          <div className="lm-form-group">
-            <div className="lm-label-row">
-              <label className="lm-label" style={{ margin: 0 }}>Giải thích (Tiếng Việt)</label>
-            </div>
-            <textarea
-              className="lm-textarea"
-              rows={4}
-              value={explanationVi}
-              onChange={e => setExplanationVi(e.target.value)}
-              placeholder="Giải thích tiếng Việt sẽ xuất hiện ở đây..."
-            />
-          </div>
-        </div>
-
-        <div className="lm-form-actions">
-          <button className="lm-btn lm-btn-ghost" onClick={handleReset}>Đặt lại</button>
-          <button className="lm-btn lm-btn-primary" onClick={handleSave}>
-            <Check size={14} /> Lưu câu hỏi
-          </button>
-        </div>
-      </div>
-
-      <div className="lm-preview-wrap">
-        <div className="lm-card-head">
-          <h2 className="lm-card-title">Xem trước</h2>
-          <p className="lm-card-desc">Giao diện học viên khi làm bài</p>
-        </div>
-        <div className="lm-preview">
-          <div className="lm-preview-title">Preview</div>
-          <div className="lm-preview-media">
-            {part === "1"
-              ? <span>📷 Ảnh minh họa</span>
-              : <Volume2 size={32} style={{ opacity: 0.35 }} />}
-          </div>
-          <div className="lm-preview-card">
-            <div className="lm-preview-q">{question}</div>
-            {["A", "B", "C", "D"].map((l, i) => (
-              <div
-                key={l}
-                className={`lm-preview-opt ${selectedAnswer === l ? "selected" : ""}`}
-              >
-                <span style={{ fontWeight: 700, marginRight: 6 }}>{l}.</span>
-                {options[i] || `Đáp án ${l}`}
-              </div>
-            ))}
-          </div>
-          <div className="lm-preview-explanation">
-            <div className="lm-preview-explanation-label">GIẢI THÍCH</div>
-            <div className="lm-preview-explanation-text">
               {explanationVi || "Sẽ hiển thị giải thích ở đây..."}
             </div>
           </div>
@@ -886,7 +704,7 @@ function GroupQuestionForm({ notify }) {
                 <option>Part 4 — Bài nói ngắn</option>
               </select>
             </div>
-            
+
             {/* Functional Group Audio File Selector */}
             <div className="lm-form-group" style={{ margin: 0 }}>
               <label className="lm-label">Audio chung</label>
@@ -904,8 +722,8 @@ function GroupQuestionForm({ notify }) {
                   }
                 }}
               />
-              <div 
-                className="lm-upload" 
+              <div
+                className="lm-upload"
                 style={{ padding: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 42 }}
                 onClick={() => document.getElementById(`group-audio-input-${gi}`).click()}
               >
@@ -915,7 +733,7 @@ function GroupQuestionForm({ notify }) {
                     <span style={{ fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>
                       {g.audioFile.name}
                     </span>
-                    <button 
+                    <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -924,7 +742,7 @@ function GroupQuestionForm({ notify }) {
                         setGroups(gs);
                       }}
                       style={{
-                        background: "rgba(239, 68, 68, 0.9)", border: "none", 
+                        background: "rgba(239, 68, 68, 0.9)", border: "none",
                         borderRadius: "50%", color: "white", padding: 2, cursor: "pointer", marginLeft: "auto", display: "flex"
                       }}
                     >
@@ -987,16 +805,16 @@ function GroupQuestionForm({ notify }) {
                   >
                     {letter}
                   </div>
-                  <input 
-                    className="lm-input" 
-                    placeholder={`Đáp án ${letter}`} 
+                  <input
+                    className="lm-input"
+                    placeholder={`Đáp án ${letter}`}
                     value={sq.opts[oIdx] || ""}
                     onChange={e => {
                       const gs = [...groups];
                       gs[gi].subQuestions[qi].opts[oIdx] = e.target.value;
                       setGroups(gs);
                     }}
-                    style={{ flex: 1 }} 
+                    style={{ flex: 1 }}
                   />
                   <input
                     type="radio"
@@ -1089,7 +907,7 @@ export default function ListeningManager({ onBack }) {
           {tab === "single" && <SingleQuestionForm notify={notify} />}
           {tab === "group" && <GroupQuestionForm notify={notify} />}
         </div>
-        
+
         {/* Custom Notification Toast */}
         {notification && (
           <div className="fade-in" style={{
