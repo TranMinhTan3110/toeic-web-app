@@ -1,12 +1,13 @@
 import {
   LayoutDashboard, BookOpen, BookMarked, FileText, Users, Bot,
-  AlertCircle, Brain
+  AlertCircle, Brain, GraduationCap
 } from "lucide-react";
 
 export const NAV = [
   { id: "dashboard", label: "Dashboard",           icon: LayoutDashboard, badge: null  },
   { id: "qbank",     label: "Quản lý Câu hỏi",    icon: BookOpen,        badge: "248" },
   { id: "vocab",     label: "Quản lý Từ vựng",    icon: BookMarked,      badge: null  },
+  { id: "grammar",   label: "Quản lý Ngữ pháp",   icon: GraduationCap,   badge: null  },
   { id: "exam",      label: "Quản lý Đề thi",      icon: FileText,        badge: "12"  },
   { id: "users",     label: "Quản lý Người dùng",  icon: Users,           badge: null  },
   { id: "ai",        label: "Cấu hình AI",          icon: Bot,             badge: null  },
@@ -16,6 +17,7 @@ export const PAGE_TITLES = {
   dashboard: "Tổng quan",
   qbank:     "Ngân hàng Câu hỏi",
   vocab:     "Quản lý Từ vựng",
+  grammar:   "Quản lý Ngữ pháp",
   exam:      "Quản lý Đề thi",
   users:     "Quản lý Người dùng",
   ai:        "Cấu hình AI",

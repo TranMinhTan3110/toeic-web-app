@@ -1,6 +1,5 @@
-import React from 'react';
-import { useState } from "react";
-import { Zap } from "lucide-react";
+import React, { useState } from 'react';
+import { Zap, Bot, BarChart2 } from "lucide-react";
 
 export default function AIPage() {
   const [temp, setTemp] = useState(0.7);
@@ -29,7 +28,12 @@ export default function AIPage() {
       <div className="ai-config-grid">
         {/* Model params */}
         <div className="card">
-          <div className="card-header"><span className="card-title">🤖 Tham số Mô hình</span></div>
+          <div className="card-header">
+            <span className="card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Bot size={18} style={{ color: "var(--accent)" }} />
+              Tham số Mô hình
+            </span>
+          </div>
 
           <div className="config-item">
             <div className="config-label">Model Engine</div>
@@ -80,7 +84,12 @@ export default function AIPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Feature toggles */}
           <div className="card">
-            <div className="card-header"><span className="card-title">⚡ Tính năng AI</span></div>
+            <div className="card-header">
+              <span className="card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Zap size={18} style={{ color: "var(--orange)" }} />
+                Tính năng AI
+              </span>
+            </div>
             {[
               { key: "autoGen",   label: "Tự động tạo câu hỏi", desc: "AI tự sinh câu hỏi theo Part được chọn"           },
               { key: "autoTag",   label: "Tự động gán nhãn",     desc: "Phân loại câu hỏi theo chủ đề & cấp độ"           },
@@ -101,7 +110,12 @@ export default function AIPage() {
 
           {/* AI stats */}
           <div className="card">
-            <div className="card-header"><span className="card-title">📊 Trạng thái AI</span></div>
+            <div className="card-header">
+              <span className="card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <BarChart2 size={18} style={{ color: "var(--blue)" }} />
+                Trạng thái AI
+              </span>
+            </div>
             {[
               { label: "Câu hỏi AI đã tạo",       val: "1,248", color: "var(--accent)" },
               { label: "Độ chính xác phân loại",   val: "94.2%", color: "var(--green)"  },
