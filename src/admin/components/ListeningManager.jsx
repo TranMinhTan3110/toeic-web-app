@@ -175,16 +175,25 @@ function SingleQuestionForm({ notify }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (data.success) {
+
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        const text = await res.text();
+        throw new Error(text || "Không thể phân tích phản hồi từ máy chủ.");
+      }
+
+      if (res.ok && data?.success) {
         notify("success", "Đã lưu câu hỏi thành công! ID: " + data.id);
         handleReset();
       } else {
-        notify("error", "Lỗi lưu câu hỏi vào hệ thống.");
+        const errMsg = data?.message || "Lỗi lưu câu hỏi vào hệ thống.";
+        notify("error", errMsg);
       }
     } catch (err) {
       console.error(err);
-      notify("error", "Đã xảy ra lỗi trong quá trình upload Cloudinary hoặc gọi API backend!");
+      notify("error", "Lỗi: " + (err.message || "Đã xảy ra sự cố trong quá trình lưu."));
     } finally {
       setSaving(false);
     }
@@ -644,8 +653,18 @@ function GroupQuestionForm({ notify }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (!data.success) throw new Error(`Lỗi khi lưu Nhóm #${i + 1}`);
+
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          const text = await res.text();
+          throw new Error(text || `Không thể phân tích phản hồi lưu Nhóm #${i + 1} từ máy chủ.`);
+        }
+
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.message || `Lỗi khi lưu Nhóm câu hỏi #${i + 1}`);
+        }
       }
 
       notify("success", "Đã lưu thành công tất cả các nhóm câu hỏi!");
