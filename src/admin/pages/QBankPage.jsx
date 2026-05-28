@@ -1,10 +1,11 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import {
   Search, Filter, Download, Upload, PlusCircle, Edit3, Trash2,
-  Headphones, Mic, PenLine, BookOpen, ChevronLeft
+  Headphones, Mic, PenLine, BookOpen, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import ListeningManager from "../components/ListeningManager.jsx";
+
 
 // ─── Data per skill ────────────────────────────────────────────────────────
 const SKILL_DATA = {
@@ -92,113 +93,124 @@ const SKILL_CARDS = [
 const levelColors = { Easy: "green", Medium: "orange", Hard: "red" };
 const statusColors = { Active: "green", Draft: "blue", Inactive: "orange" };
 
-// ─── Skill selector screen ─────────────────────────────────────────────────
-function SkillSelector({ onSelect }) {
-  return (
-    <div className="page-enter">
-      <div className="page-header">
-        <h1 className="page-title">Ngân hàng Câu hỏi</h1>
-        <p className="page-subtitle">Chọn kỹ năng để quản lý câu hỏi</p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20, maxWidth: 720, margin: "0 auto" }}>
-        {SKILL_CARDS.map(({ id, label, icon: Icon, desc, cssColor, cssSoft }) => (
-          <div
-            key={id}
-            onClick={() => onSelect(id)}
-            style={{
-              background: "var(--bg-secondary)",
-              border: `1.5px solid var(--border)`,
-              borderRadius: "var(--radius)",
-              padding: "32px 28px",
-              cursor: "pointer",
-              transition: "all var(--transition)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: 12,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = cssColor;
-              e.currentTarget.style.boxShadow = `0 8px 32px ${cssSoft}`;
-              e.currentTarget.style.transform = "translateY(-3px)";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = "var(--border)";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            <div style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: cssSoft,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Icon size={26} color={cssColor} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 22, color: "var(--text)", marginBottom: 4 }}>
-                {label}
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{desc}</div>
-            </div>
-            <div style={{
-              marginTop: 4, fontSize: 12, fontWeight: 600,
-              color: cssColor, display: "flex", alignItems: "center", gap: 4,
-            }}>
-              Xem câu hỏi →
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Question list screen ──────────────────────────────────────────────────
-function SkillQuestions({ skillId, onBack }) {
+function SkillQuestions({ skillId }) {
   const [view, setView] = useState("list");
-  const skill = SKILL_DATA[skillId];
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [partFilter, setPartFilter] = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [deletingQuestion, setDeletingQuestion] = useState(null);
+
+  const [listeningData, setListeningData] = useState({ questions: [], loading: false, parts: SKILL_DATA.listening.parts });
+  
+  useEffect(() => {
+    setCurrentPage(1); // Reset page when skill changes
+  }, [skillId]);
+  
+  useEffect(() => {
+    if (skillId === "listening") {
+      setListeningData(prev => ({ ...prev, loading: true }));
+      fetch("http://localhost:5133/api/listening/admin/all")
+        .then(res => res.json())
+        .then(data => {
+          const mappedQuestions = data.map(q => {
+            const id = q.id || "";
+            return {
+              id: id,
+              displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
+              part: `Part ${q.part}`,
+            type: q.part === 1 ? "Photographs" : q.part === 2 ? "Question-Response" : q.part === 3 ? "Conversations" : "Short Talks",
+            content: q.questionText || "Câu hỏi Audio",
+            script: q.script || "",
+            level: q.difficulty || "Medium",
+            status: "Active"
+            };
+          });
+          const p1 = data.filter(q => q.part === 1).length;
+          const p2 = data.filter(q => q.part === 2).length;
+          const p3 = data.filter(q => q.part === 3).length;
+          const p4 = data.filter(q => q.part === 4).length;
+
+          const parts = [
+            { label: "Part 1", val: p1.toString(), desc: "Photographs" },
+            { label: "Part 2", val: p2.toString(), desc: "Question-Response" },
+            { label: "Part 3", val: p3.toString(), desc: "Conversations" },
+            { label: "Part 4", val: p4.toString(), desc: "Short Talks" },
+          ];
+
+          setListeningData({ questions: mappedQuestions, parts, loading: false });
+        })
+        .catch(err => {
+          console.error(err);
+          setListeningData(prev => ({ ...prev, loading: false }));
+        });
+    }
+  }, [skillId]);
+
+  const skill = skillId === "listening" 
+    ? { ...SKILL_DATA[skillId], questions: listeningData.questions, parts: listeningData.parts } 
+    : SKILL_DATA[skillId];
+    
   const card = SKILL_CARDS.find(c => c.id === skillId);
 
+  const filteredQuestions = (skill.questions || []).filter(q => {
+    const searchLower = (searchQuery || "").toLowerCase();
+    const matchSearch = 
+      (q.content || "").toLowerCase().includes(searchLower) || 
+      (q.id || "").toLowerCase().includes(searchLower) ||
+      (q.script && q.script.toLowerCase().includes(searchLower));
+      
+    const matchPart = partFilter ? q.part === partFilter : true;
+    const matchLevel = levelFilter ? q.level.toLowerCase() === levelFilter.toLowerCase() : true;
+    return matchSearch && matchPart && matchLevel;
+  });
+
+  const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
+  const paginatedQuestions = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Lưu ý cho team: Khi các chức năng phức tạp hơn, mỗi tab kỹ năng (Listening, Speaking...) 
+  // nên được tách ra thành một component/file riêng biệt (ví dụ: ListeningManager.jsx, SpeakingManager.jsx) 
+  // để tránh conflict khi code chung.
   if (skillId === "listening" && view === "add") {
     return <ListeningManager onBack={() => setView("list")} />;
   }
 
   return (
-    <div className="page-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button
-              onClick={onBack}
-              className="btn btn-secondary"
-              style={{ height: 36, padding: "0 12px", gap: 6 }}
-            >
-              <ChevronLeft size={15} /> Quay lại
-            </button>
-            <div>
-              <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <card.icon size={22} color={card.cssColor} />
-                {skill.label}
-              </h1>
-              <p className="page-subtitle">Quản lý câu hỏi kỹ năng {skill.label}</p>
-            </div>
+    <div className="fade-in">
+      {/* Header Actions */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 10, background: card.cssSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <card.icon size={22} color={card.cssColor} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn btn-secondary"><Upload size={15} />Nhập Excel</button>
-            <button
-              className="btn btn-primary"
-              style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
-              onClick={() => {
-                if (skillId === "listening") setView("add");
-                else alert(`Giao diện thêm câu hỏi ${skill.label} đang được phát triển.`);
-              }}
-            >
-              <PlusCircle size={15} />Thêm câu hỏi
-            </button>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", margin: 0, marginBottom: 2 }}>{skill.label}</h2>
+            <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>Quản lý câu hỏi kỹ năng {skill.label}</p>
           </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            className="btn btn-primary"
+            style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
+            onClick={() => {
+              if (skillId === "listening") setView("add");
+              else {
+                Swal.fire({
+                  title: "Thông báo",
+                  text: `Giao diện thêm câu hỏi kỹ năng ${skill.label} đang được phát triển.`,
+                  icon: "info",
+                  confirmButtonText: "Đồng ý",
+                  confirmButtonColor: "var(--accent)"
+                });
+              }
+            }}
+          >
+            <PlusCircle size={15} />Thêm câu hỏi
+          </button>
         </div>
       </div>
 
@@ -218,33 +230,65 @@ function SkillQuestions({ skillId, onBack }) {
         <div className="toolbar">
           <div className="toolbar-search-wrap" style={{ flex: 1 }}>
             <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
-            <input className="toolbar-search" placeholder={`Tìm kiếm câu hỏi ${skill.label}...`} />
+            <input 
+              className="toolbar-search" 
+              placeholder={`Tìm kiếm câu hỏi ${skill.label}...`}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
           </div>
-          <button className="btn btn-secondary" style={{ height: 36 }}><Filter size={14} />Part</button>
-          <button className="btn btn-secondary" style={{ height: 36 }}><Filter size={14} />Cấp độ</button>
-          <button className="btn btn-secondary" style={{ height: 36 }}><Download size={14} />Xuất</button>
+          <select 
+            className="btn btn-secondary" 
+            style={{ height: 36, outline: "none", cursor: "pointer" }}
+            value={partFilter}
+            onChange={(e) => { setPartFilter(e.target.value); setCurrentPage(1); }}
+          >
+            <option value="">Tất cả Part</option>
+            {skill.parts.map(p => (
+              <option key={p.label} value={p.label}>{p.label}</option>
+            ))}
+          </select>
+          <select 
+            className="btn btn-secondary" 
+            style={{ height: 36, outline: "none", cursor: "pointer" }}
+            value={levelFilter}
+            onChange={(e) => { setLevelFilter(e.target.value); setCurrentPage(1); }}
+          >
+            <option value="">Mọi cấp độ</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
         </div>
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>ID</th><th>Part</th><th>Loại</th><th>Nội dung câu hỏi</th>
-                <th>Độ khó</th><th>Trạng thái</th><th>Thao tác</th>
+                <th style={{ minWidth: 110 }}>ID</th>
+                <th>Part</th>
+                <th>Loại</th>
+                <th>Nội dung câu hỏi</th>
+                <th>Độ khó</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {skill.questions.map(q => (
+              {paginatedQuestions.map(q => (
                 <tr key={q.id}>
-                  <td style={{ fontFamily: "monospace", fontSize: 12, color: card.cssColor }}>{q.id}</td>
+                  <td style={{ fontFamily: "monospace", fontSize: 13, color: card.cssColor, letterSpacing: 0.5 }} title={q.id}>{q.displayId || q.id}</td>
                   <td><span className="badge" style={{ background: card.cssSoft, color: card.cssColor }}>{q.part}</span></td>
                   <td className="td-main">{q.type}</td>
                   <td style={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.content}</td>
-                  <td><span className={`badge ${levelColors[q.level]}`}>{q.level}</span></td>
+                  <td><span className={`badge ${levelColors[q.level] || levelColors["Medium"]}`}>{q.level}</span></td>
                   <td><span className={`badge ${statusColors[q.status]}`}>{q.status}</span></td>
                   <td>
                     <div className="action-btns">
-                      <button className="btn-icon-sm edit"><Edit3 size={12} /></button>
-                      <button className="btn-icon-sm delete"><Trash2 size={12} /></button>
+                      <button className="btn-icon-sm edit" onClick={() => setEditingQuestion(q)} title="Xem / Chỉnh sửa"><Edit3 size={12} /></button>
+                      <button className="btn-icon-sm delete" onClick={() => setDeletingQuestion(q)} title="Xóa"><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -252,18 +296,217 @@ function SkillQuestions({ skillId, onBack }) {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination */}
+        {filteredQuestions.length > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
+              Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} trong số {filteredQuestions.length} câu hỏi
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ height: 32, padding: "0 12px", gap: 6 }}
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                <ChevronLeft size={14} /> Trước
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                style={{ height: 32, padding: "0 12px", gap: 6 }}
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                Sau <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Edit Modal */}
+      {editingQuestion && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div className="fade-in" style={{ backgroundColor: "var(--bg)", width: "100%", maxWidth: 600, borderRadius: "var(--radius)", padding: 24, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", position: "relative" }}>
+            <button onClick={() => setEditingQuestion(null)} style={{ position: "absolute", top: 16, right: 16, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-tertiary)" }}>
+              <X size={20} />
+            </button>
+            <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: 18, color: "var(--text)" }}>Chi tiết câu hỏi</h3>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", gap: 20 }}>
+                <div><span style={{color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4}}>Mã câu hỏi</span> <span style={{ fontFamily: "monospace", fontSize: 13 }}>{editingQuestion.id}</span></div>
+                <div><span style={{color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4}}>Part</span> <span className="badge" style={{ background: card.cssSoft, color: card.cssColor }}>{editingQuestion.part}</span></div>
+                <div><span style={{color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4}}>Độ khó</span> <span className={`badge ${levelColors[editingQuestion.level] || levelColors["Medium"]}`}>{editingQuestion.level}</span></div>
+              </div>
+              
+              <div>
+                <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Nội dung câu hỏi</span>
+                <textarea 
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 80, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
+                  defaultValue={editingQuestion.content}
+                />
+              </div>
+
+              <div>
+                <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Script (Kịch bản Audio)</span>
+                <textarea 
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 120, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
+                  defaultValue={editingQuestion.script || "Chưa có kịch bản"}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setEditingQuestion(null)}>Hủy</button>
+                <button className="btn btn-primary" onClick={() => { 
+                  Swal.fire({
+                    title: "Thành công!",
+                    text: "Đã lưu thay đổi vào hệ thống (giả lập)!",
+                    icon: "success",
+                    confirmButtonText: "Đồng ý",
+                    confirmButtonColor: "var(--accent)"
+                  });
+                  setEditingQuestion(null); 
+                }} style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}>
+                  Lưu thay đổi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingQuestion && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div className="fade-in" style={{ backgroundColor: "var(--bg)", width: 400, borderRadius: "var(--radius)", padding: 24, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 24, background: "rgba(239, 68, 68, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "#ef4444" }}>
+              <Trash2 size={24} />
+            </div>
+            <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 18, color: "var(--text)" }}>Xác nhận xóa câu hỏi</h3>
+            <p style={{ color: "var(--text-tertiary)", fontSize: 14, margin: "0 0 24px", lineHeight: 1.5 }}>
+              Bạn có chắc chắn muốn xóa câu hỏi <strong style={{color: "var(--text)"}}>{deletingQuestion.displayId || deletingQuestion.id}</strong> không? Hành động này không thể hoàn tác.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setDeletingQuestion(null)}>Hủy bỏ</button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }} 
+                onClick={async () => {
+                  const targetId = deletingQuestion.id;
+                  try {
+                    const res = await fetch(`http://localhost:5133/api/listening/admin/${targetId}`, {
+                      method: "DELETE"
+                    });
+                    
+                    if (res.ok) {
+                      setListeningData(prev => ({
+                        ...prev,
+                        questions: prev.questions.filter(q => q.id !== targetId)
+                      }));
+
+                      Swal.fire({
+                        title: "Đã xóa!",
+                        text: `Đã xóa câu hỏi ${deletingQuestion.displayId || targetId} thành công!`,
+                        icon: "success",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "#ef4444"
+                      });
+                    } else {
+                      Swal.fire({
+                        title: "Lỗi",
+                        text: "Không thể xóa câu hỏi trên hệ thống.",
+                        icon: "error",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "#ef4444"
+                      });
+                    }
+                  } catch (err) {
+                    console.error("Delete error:", err);
+                    Swal.fire({
+                      title: "Lỗi kết nối",
+                      text: "Không thể kết nối đến máy chủ.",
+                      icon: "error",
+                      confirmButtonText: "Đồng ý",
+                      confirmButtonColor: "#ef4444"
+                    });
+                  }
+                  setDeletingQuestion(null);
+                }}
+              >
+                Xóa câu hỏi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Main export ───────────────────────────────────────────────────────────
 export default function QBankPage() {
-  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [selectedSkill, setSelectedSkill] = useState("listening");
 
-  if (selectedSkill) {
-    return <SkillQuestions skillId={selectedSkill} onBack={() => setSelectedSkill(null)} />;
-  }
+  return (
+    <div className="page-enter">
+      <div className="page-header" style={{ marginBottom: 24 }}>
+        <h1 className="page-title">Ngân hàng Câu hỏi</h1>
+        <p className="page-subtitle">Quản lý câu hỏi theo từng kỹ năng</p>
+      </div>
 
-  return <SkillSelector onSelect={setSelectedSkill} />;
+      {/* Tabs */}
+      <div style={{
+        display: "flex",
+        gap: 12,
+        borderBottom: "1px solid var(--border)",
+        paddingBottom: 16,
+        marginBottom: 24,
+        overflowX: "auto"
+      }}>
+        {SKILL_CARDS.map(({ id, label, icon: Icon, cssColor, cssSoft }) => {
+          const isActive = selectedSkill === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setSelectedSkill(id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 20px",
+                borderRadius: "var(--radius)",
+                background: isActive ? cssSoft : "transparent",
+                color: isActive ? cssColor : "var(--text-tertiary)",
+                border: isActive ? `1px solid ${cssColor}` : "1px solid transparent",
+                fontWeight: isActive ? 600 : 500,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap"
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "var(--bg-secondary)";
+                  e.currentTarget.style.color = "var(--text)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "var(--text-tertiary)";
+                }
+              }}
+            >
+              <Icon size={18} color={isActive ? cssColor : "currentColor"} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <SkillQuestions skillId={selectedSkill} />
+    </div>
+  );
 }

@@ -31,7 +31,6 @@
     display: flex; align-items: center; gap: 14px;
   }
   .lm-page-title {
-    font-family: 'Syne', sans-serif;
     font-size: 22px; font-weight: 800; color: var(--text);
     letter-spacing: -0.3px;
   }
@@ -128,7 +127,6 @@
     border-bottom: 1.5px solid var(--border);
   }
   .lm-card-title {
-    font-family: 'Syne', sans-serif;
     font-size: 16px; font-weight: 700; color: var(--text);
   }
   .lm-card-desc {

@@ -5,22 +5,20 @@ import { signOut } from "firebase/auth";
 import { auth } from "../../config/firebase";
 import Swal from "sweetalert2";
 import {
-  Search, Bell, Sun, Moon, ChevronDown,
+  Search, ChevronDown,
   User, Settings, BarChart3, LogOut
 } from "lucide-react";
-import { PAGE_TITLES, NOTIFICATIONS } from "../../constants/admin.js";
+import { PAGE_TITLES } from "../../constants/admin.js";
 
-export default function Header({ page, dark, setDark }) {
-  const { user } = useSelector((state) => state.auth);
+export default function Header({ page, setPage, dark, setDark }) {
+  const { user, profile } = useSelector((state) => state.auth);
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const notifRef = useRef(null);
   const profileRef = useRef(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
     const handler = e => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
     };
     document.addEventListener("mousedown", handler);
@@ -29,7 +27,7 @@ export default function Header({ page, dark, setDark }) {
 
   const handleLogout = async () => {
     setShowProfile(false); // Đóng profile dropdown trước khi hiện Swal
-    
+
     const result = await Swal.fire({
       title: "Đăng xuất?",
       text: "Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc này?",
@@ -47,7 +45,7 @@ export default function Header({ page, dark, setDark }) {
     if (result.isConfirmed) {
       try {
         await signOut(auth);
-        
+
         // Hiển thị toast tạm biệt ngắn gọn
         const Toast = Swal.mixin({
           toast: true,
@@ -85,8 +83,9 @@ export default function Header({ page, dark, setDark }) {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const adminName = user?.displayName || "Tuấn Admin";
-  const adminEmail = user?.email || "admin@toeicmaster.vn";
+  const adminName = profile?.displayName || user?.displayName || "Học viên TOEIC";
+  const adminEmail = profile?.email || user?.email || "hocvien@toeicmaster.vn";
+  const adminRole = profile?.role === "admin" ? "Super Admin" : (profile?.role === "teacher" ? "Giáo viên" : "Học viên");
 
   return (
     <header className="header">
@@ -98,53 +97,23 @@ export default function Header({ page, dark, setDark }) {
       </div>
 
       <div className="header-actions">
-        {/* Dark mode */}
-        <button className="icon-btn" onClick={() => setDark(d => !d)} title="Chế độ tối/sáng">
-          {dark ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-
-        {/* Notifications */}
-        <div className="dropdown-wrapper" ref={notifRef}>
-          <button
-            className="icon-btn"
-            onClick={() => { setShowNotif(v => !v); setShowProfile(false); }}
-          >
-            <Bell size={16} />
-            <span className="notif-dot" />
-          </button>
-          {showNotif && (
-            <div className="dropdown notif-dropdown">
-              <div className="dropdown-header">
-                <span>Thông báo</span>
-                <span style={{ fontSize: 11, color: "var(--accent)", cursor: "pointer" }}>
-                  Đánh dấu đã đọc
-                </span>
-              </div>
-              {NOTIFICATIONS.map(n => (
-                <div key={n.title} className="notif-item">
-                  <div className="notif-icon" style={{ background: n.bg }}>
-                    <n.icon size={16} color={n.color} />
-                  </div>
-                  <div className="notif-text">
-                    <div className="notif-title">{n.title}</div>
-                    <div className="notif-time">{n.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Profile */}
         <div className="dropdown-wrapper" ref={profileRef}>
           <button
             className="profile-btn"
-            onClick={() => { setShowProfile(v => !v); setShowNotif(false); }}
+            onClick={() => { setShowProfile(v => !v); }}
           >
-            <div className="avatar">{getInitials(adminName)}</div>
+            <div className="avatar" style={{ overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {profile?.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                getInitials(adminName)
+              )}
+            </div>
             <div className="profile-info">
               <div className="profile-name">{adminName}</div>
-              <div className="profile-role">Super Admin</div>
+              <div className="profile-role">{adminRole}</div>
             </div>
             <ChevronDown size={14} color="var(--text-tertiary)" />
           </button>
@@ -154,8 +123,18 @@ export default function Header({ page, dark, setDark }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{adminName}</div>
                 <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{adminEmail}</div>
               </div>
-              <div className="dropdown-item"><User size={16} />Hồ sơ cá nhân</div>
-              <div className="dropdown-item"><Settings size={16} />Cài đặt tài khoản</div>
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof setPage === "function") {
+                    setPage("profile");
+                  }
+                  setShowProfile(false);
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                <User size={16} />Hồ sơ cá nhân
+              </div>
               <div className="dropdown-item"><BarChart3 size={16} />Nhật ký hoạt động</div>
               <div className="dropdown-divider" />
               <div
