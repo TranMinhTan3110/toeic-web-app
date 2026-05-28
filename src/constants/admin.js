@@ -7,6 +7,7 @@ export const NAV = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: null },
   { id: "qbank", label: "Quản lý Câu hỏi", icon: BookOpen, badge: null },
   { id: "vocab", label: "Quản lý Từ vựng", icon: BookMarked, badge: null },
+  { id: "grammar", label: "Quản lý Ngữ pháp", icon: GraduationCap, badge: null },
   { id: "exam", label: "Quản lý Đề thi", icon: FileText, badge: null },
   { id: "users", label: "Quản lý Người dùng", icon: Users, badge: null },
 ];
@@ -15,6 +16,7 @@ export const PAGE_TITLES = {
   dashboard: "Tổng quan",
   qbank: "Ngân hàng Câu hỏi",
   vocab: "Quản lý Từ vựng",
+  grammar: "Quản lý Ngữ pháp",
   exam: "Quản lý Đề thi",
   users: "Quản lý Người dùng",
   profile: "Thông tin tài khoản",
