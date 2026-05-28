@@ -547,6 +547,17 @@ const CSS = `
   }
   .page-enter { animation: fadeSlideIn 0.3s ease forwards; }
 
+  /* Shimmer Loading Effect */
+  .shimmer {
+    background: linear-gradient(90deg, var(--border) 25%, var(--border-strong) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmerLoading 1.6s infinite linear;
+  }
+  @keyframes shimmerLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
   /* ─── RESPONSIVE ─── */
   @media (max-width: 900px) {
     .stat-grid { grid-template-columns: repeat(2,1fr); }
