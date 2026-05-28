@@ -8,17 +8,21 @@ import Header from "./components/Header.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import QBankPage from "./pages/QBankPage.jsx";
 import VocabPage from "./pages/VocabPage.jsx";
+import GrammarPage from "./pages/GrammarPage.jsx";
 import ExamPage from "./pages/ExamPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import AIPage from "./pages/AIPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 const PAGES = {
   dashboard: DashboardPage,
   qbank: QBankPage,
   vocab: VocabPage,
+  grammar: GrammarPage,
   exam: ExamPage,
   users: UsersPage,
   ai: AIPage,
+  profile: ProfilePage,
 };
 
 export default function AdminApp() {
@@ -46,7 +50,7 @@ export default function AdminApp() {
 
         {/* Main */}
         <div className={`main-wrapper${collapsed ? " collapsed" : ""}`}>
-          <Header page={page} dark={dark} setDark={setDark} />
+          <Header page={page} setPage={setPage} dark={dark} setDark={setDark} />
 
           <main className="content-area" key={page}>
             <PageComponent />

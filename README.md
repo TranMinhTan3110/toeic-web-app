@@ -179,3 +179,5 @@ Frontend là **Tầng Hiển Thị**, không bao giờ được phép trực ti�
 5. **Bước cuối (Tùy chọn cho Team Leader):** Lên mặt web của GitHub, bấm nút "**Compare & Pull Request**" để gộp nhánh `feature/exam-ui` ngược trở lại trang `develop`. Trưởng nhóm sẽ đọc code xem bạn code chuẩn không rồi mới bấm "Merge". 
 
 
+4. **Cài thư viện thông báo sweet alert**
+    `npm install sweetalert2`
