@@ -369,6 +369,45 @@ const CSS = `
   .bar:hover { background: var(--accent); }
   .bar.active { background: var(--accent); }
 
+  /* Premium Tooltip for chart bars */
+  .bar::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+  }
+  .bar::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    border-width: 4px;
+    border-style: solid;
+    border-color: var(--text) transparent transparent transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+  }
+  .bar:hover::after, .bar:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* Progress bars */
   .progress-list { display: flex; flex-direction: column; gap: 14px; }
   .progress-item { }

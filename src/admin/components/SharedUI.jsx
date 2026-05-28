@@ -1,10 +1,11 @@
 import React from "react";
 // ─── Bar (mini chart) ─────────────────────────────
-export function Bar({ h, active }) {
+export function Bar({ h, active, val }) {
   return (
     <div
       className={`bar${active ? " active" : ""}`}
       style={{ height: `${h}%` }}
+      data-tooltip={`${val} người dùng`}
     />
   );
 }

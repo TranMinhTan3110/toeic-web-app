@@ -118,20 +118,22 @@ export default function DashboardPage() {
     );
   }
 
-  // Get dynamic months labels for past 12 months
-  const getPast12MonthsLabels = () => {
-    const monthNames = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+  // Get dynamic week labels (dd/MM) for past 12 weeks
+  const getPast12WeeksLabels = () => {
     const labels = [];
     const now = new Date();
     for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      labels.push(monthNames[d.getMonth()]);
+      const d = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const day = d.getDate().toString().padStart(2, "0");
+      const month = (d.getMonth() + 1).toString().padStart(2, "0");
+      labels.push(`${day}/${month}`);
     }
     return labels;
   };
 
-  const monthLabels = getPast12MonthsLabels();
-  const bars = stats?.monthlyAttempts || [40, 55, 35, 70, 60, 85, 65, 90, 72, 80, 68, 95];
+  const weekLabels = getPast12WeeksLabels();
+  const bars = stats?.monthlyAttempts || [2, 4, 3, 5, 4, 6, 5, 8, 6, 9, 7, 12];
+  const maxVal = Math.max(...bars, 1);
 
   return (
     <div className="page-enter">
@@ -209,13 +211,22 @@ export default function DashboardPage() {
       <div className="chart-row" style={{ gridTemplateColumns: "1fr" }}>
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Lượt luyện tập Nghe & Thi thử (12 tháng qua)</span>
+            <span className="card-title">Lượt người dùng mới đăng ký (12 tuần qua)</span>
             <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Được cập nhật tự động</span>
           </div>
           <div className="mini-chart" style={{ height: 120 }}>
-            {bars.map((h, i) => (
-              <Bar key={i} h={h} active={i === 11} />
-            ))}
+            {bars.map((v, i) => {
+              // Scale the visual height beautifully: max count takes 85% height, minimum 10% for sleek baseline
+              const heightPct = (v / maxVal) * 85 + 10;
+              return (
+                <Bar 
+                  key={i} 
+                  h={heightPct} 
+                  val={v} 
+                  active={i === 11} 
+                />
+              );
+            })}
           </div>
           <div
             style={{
@@ -228,8 +239,8 @@ export default function DashboardPage() {
               padding: "0 4px"
             }}
           >
-            {monthLabels.map((m, idx) => (
-              <span key={idx}>{m}</span>
+            {weekLabels.map((w, idx) => (
+              <span key={idx}>{w}</span>
             ))}
           </div>
         </div>
