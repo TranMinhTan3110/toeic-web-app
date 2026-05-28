@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BookOpen, BookMarked, FileText, Users, Bot,
-  AlertCircle, Brain
+  AlertCircle, Brain, GraduationCap
 } from "lucide-react";
 
 export const NAV = [
