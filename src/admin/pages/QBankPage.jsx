@@ -5,6 +5,7 @@ import {
   Headphones, Mic, PenLine, BookOpen, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import ListeningManager from "../components/ListeningManager.jsx";
+import SpeakingManager from "../components/SpeakingManager.jsx";
 
 
 // ─── Data per skill ────────────────────────────────────────────────────────
@@ -38,6 +39,7 @@ const SKILL_DATA = {
       { label: "Q3–4", val: "95", desc: "Describe Picture" },
       { label: "Q5–7", val: "110", desc: "Respond to Questions" },
       { label: "Q8–10", val: "88", desc: "Respond w/ Info" },
+      { label: "Q11", val: "50", desc: "Express Opinion" },
     ],
     questions: [
       { id: "S001", part: "Q1–2", type: "Read Aloud", content: "Read the following passage aloud clearly and naturally.", level: "Easy", status: "Active" },
@@ -85,7 +87,7 @@ const SKILL_DATA = {
 
 const SKILL_CARDS = [
   { id: "listening", label: "Listening", icon: Headphones, desc: "Parts 1–4 · 1,600 câu", color: "blue", cssColor: "var(--blue)", cssSoft: "var(--blue-soft)" },
-  { id: "speaking", label: "Speaking", icon: Mic, desc: "Q1–10 · 373 câu", color: "green", cssColor: "var(--green)", cssSoft: "var(--green-soft)" },
+  { id: "speaking", label: "Speaking", icon: Mic, desc: "Q1–11 · 373 câu", color: "green", cssColor: "var(--green)", cssSoft: "var(--green-soft)" },
   { id: "writing", label: "Writing", icon: PenLine, desc: "Q1–8 · 530 câu", color: "orange", cssColor: "var(--orange)", cssSoft: "var(--orange-soft)" },
   { id: "reading", label: "Reading", icon: BookOpen, desc: "Parts 5–7 · 1,820 câu", color: "purple", cssColor: "var(--accent)", cssSoft: "var(--accent-soft)" },
 ];
@@ -106,6 +108,7 @@ function SkillQuestions({ skillId }) {
   const [deletingQuestion, setDeletingQuestion] = useState(null);
 
   const [listeningData, setListeningData] = useState({ questions: [], loading: false, parts: SKILL_DATA.listening.parts });
+  const [speakingData, setSpeakingData] = useState({ questions: [], loading: false, parts: SKILL_DATA.speaking.parts });
   
   useEffect(() => {
     setCurrentPage(1); // Reset page when skill changes
@@ -151,8 +154,52 @@ function SkillQuestions({ skillId }) {
     }
   }, [skillId]);
 
+  useEffect(() => {
+    if (skillId === "speaking") {
+      setSpeakingData(prev => ({ ...prev, loading: true }));
+      fetch("http://localhost:5133/api/speaking/admin/all")
+        .then(res => res.json())
+        .then(data => {
+          const mappedQuestions = data.map(q => {
+            const id = q.id || "";
+            return {
+              id: id,
+              displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
+              part: `Q${q.taskNumber === 1 ? "1–2" : q.taskNumber === 2 ? "3–4" : q.taskNumber === 3 ? "5–7" : q.taskNumber === 4 ? "8–10" : "11"}`,
+              type: q.taskType || "Speaking Task",
+              content: q.promptText || "Câu hỏi Speaking",
+              script: q.promptText || "",
+              level: q.difficulty ? (q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)) : "Medium",
+              status: "Active"
+            };
+          });
+          const p1 = data.filter(q => q.taskNumber === 1).length;
+          const p2 = data.filter(q => q.taskNumber === 2).length;
+          const p3 = data.filter(q => q.taskNumber === 3).length;
+          const p4 = data.filter(q => q.taskNumber === 4).length;
+          const p5 = data.filter(q => q.taskNumber === 5).length;
+
+          const parts = [
+            { label: "Q1–2", val: p1.toString(), desc: "Read Aloud" },
+            { label: "Q3–4", val: p2.toString(), desc: "Describe Picture" },
+            { label: "Q5–7", val: p3.toString(), desc: "Respond to Questions" },
+            { label: "Q8–10", val: p4.toString(), desc: "Respond w/ Info" },
+            { label: "Q11", val: p5.toString(), desc: "Express Opinion" },
+          ];
+
+          setSpeakingData({ questions: mappedQuestions, parts, loading: false });
+        })
+        .catch(err => {
+          console.error(err);
+          setSpeakingData(prev => ({ ...prev, loading: false }));
+        });
+    }
+  }, [skillId]);
+
   const skill = skillId === "listening" 
     ? { ...SKILL_DATA[skillId], questions: listeningData.questions, parts: listeningData.parts } 
+    : skillId === "speaking"
+    ? { ...SKILL_DATA[skillId], questions: speakingData.questions, parts: speakingData.parts }
     : SKILL_DATA[skillId];
     
   const card = SKILL_CARDS.find(c => c.id === skillId);
@@ -178,6 +225,9 @@ function SkillQuestions({ skillId }) {
   if (skillId === "listening" && view === "add") {
     return <ListeningManager onBack={() => setView("list")} />;
   }
+  if (skillId === "speaking" && view === "add") {
+    return <SpeakingManager onBack={() => setView("list")} />;
+  }
 
   return (
     <div className="fade-in">
@@ -197,7 +247,7 @@ function SkillQuestions({ skillId }) {
             className="btn btn-primary"
             style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
             onClick={() => {
-              if (skillId === "listening") setView("add");
+              if (skillId === "listening" || skillId === "speaking") setView("add");
               else {
                 Swal.fire({
                   title: "Thông báo",
@@ -395,16 +445,26 @@ function SkillQuestions({ skillId }) {
                 style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }} 
                 onClick={async () => {
                   const targetId = deletingQuestion.id;
+                  const endpoint = skillId === "listening" 
+                    ? `http://localhost:5133/api/listening/admin/${targetId}` 
+                    : `http://localhost:5133/api/speaking/admin/${targetId}`;
                   try {
-                    const res = await fetch(`http://localhost:5133/api/listening/admin/${targetId}`, {
+                    const res = await fetch(endpoint, {
                       method: "DELETE"
                     });
                     
                     if (res.ok) {
-                      setListeningData(prev => ({
-                        ...prev,
-                        questions: prev.questions.filter(q => q.id !== targetId)
-                      }));
+                      if (skillId === "listening") {
+                        setListeningData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId)
+                        }));
+                      } else if (skillId === "speaking") {
+                        setSpeakingData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId)
+                        }));
+                      }
 
                       Swal.fire({
                         title: "Đã xóa!",
