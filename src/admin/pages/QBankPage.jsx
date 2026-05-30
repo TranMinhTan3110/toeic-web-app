@@ -104,6 +104,8 @@ function SkillQuestions({ skillId }) {
   const [levelFilter, setLevelFilter] = useState("");
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [deletingQuestion, setDeletingQuestion] = useState(null);
+  const [editContent, setEditContent] = useState("");
+  const [editScript, setEditScript] = useState("");
 
   const [listeningData, setListeningData] = useState({ questions: [], loading: false, parts: SKILL_DATA.listening.parts });
   
@@ -123,11 +125,13 @@ function SkillQuestions({ skillId }) {
               id: id,
               displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
               part: `Part ${q.part}`,
-            type: q.part === 1 ? "Photographs" : q.part === 2 ? "Question-Response" : q.part === 3 ? "Conversations" : "Short Talks",
-            content: q.questionText || "Câu hỏi Audio",
-            script: q.script || "",
-            level: q.difficulty || "Medium",
-            status: "Active"
+              partNum: q.part,
+              type: q.part === 1 ? "Photographs" : q.part === 2 ? "Question-Response" : q.part === 3 ? "Conversations" : "Short Talks",
+              content: q.questionText || "Câu hỏi Audio",
+              script: q.script || "",
+              level: q.difficulty || "Medium",
+              status: "Active",
+              groupId: q.groupId || ""
             };
           });
           const p1 = data.filter(q => q.part === 1).length;
@@ -287,7 +291,7 @@ function SkillQuestions({ skillId }) {
                   <td><span className={`badge ${statusColors[q.status]}`}>{q.status}</span></td>
                   <td>
                     <div className="action-btns">
-                      <button className="btn-icon-sm edit" onClick={() => setEditingQuestion(q)} title="Xem / Chỉnh sửa"><Edit3 size={12} /></button>
+                      <button className="btn-icon-sm edit" onClick={() => { setEditingQuestion(q); setEditContent(q.content || ""); setEditScript(q.script || ""); }} title="Xem / Chỉnh sửa"><Edit3 size={12} /></button>
                       <button className="btn-icon-sm delete" onClick={() => setDeletingQuestion(q)} title="Xóa"><Trash2 size={12} /></button>
                     </div>
                   </td>
@@ -345,7 +349,8 @@ function SkillQuestions({ skillId }) {
                 <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Nội dung câu hỏi</span>
                 <textarea 
                   style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 80, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                  defaultValue={editingQuestion.content}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
                 />
               </div>
 
@@ -353,22 +358,73 @@ function SkillQuestions({ skillId }) {
                 <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Script (Kịch bản Audio)</span>
                 <textarea 
                   style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 120, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                  defaultValue={editingQuestion.script || "Chưa có kịch bản"}
+                  value={editScript}
+                  onChange={(e) => setEditScript(e.target.value)}
                 />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 8 }}>
                 <button className="btn btn-secondary" onClick={() => setEditingQuestion(null)}>Hủy</button>
-                <button className="btn btn-primary" onClick={() => { 
-                  Swal.fire({
-                    title: "Thành công!",
-                    text: "Đã lưu thay đổi vào hệ thống (giả lập)!",
-                    icon: "success",
-                    confirmButtonText: "Đồng ý",
-                    confirmButtonColor: "var(--accent)"
-                  });
-                  setEditingQuestion(null); 
-                }} style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`http://localhost:5133/api/listening/admin/${editingQuestion.id}`, {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                          id: editingQuestion.id,
+                          part: editingQuestion.partNum,
+                          questionText: editContent,
+                          script: editScript,
+                          difficulty: editingQuestion.level,
+                          groupId: editingQuestion.groupId
+                        })
+                      });
+                      
+                      const result = await response.json();
+                      if (response.ok && result.success) {
+                        setListeningData(prev => ({
+                          ...prev,
+                          questions: prev.questions.map(q => 
+                            q.id === editingQuestion.id 
+                              ? { ...q, content: editContent, script: editScript } 
+                              : q
+                          )
+                        }));
+
+                        Swal.fire({
+                          title: "Thành công!",
+                          text: "Đã lưu thay đổi vào hệ thống!",
+                          icon: "success",
+                          confirmButtonText: "Đồng ý",
+                          confirmButtonColor: "var(--accent)"
+                        });
+                      } else {
+                        Swal.fire({
+                          title: "Thất bại",
+                          text: result.message || "Không thể lưu thay đổi vào hệ thống.",
+                          icon: "error",
+                          confirmButtonText: "Đồng ý",
+                          confirmButtonColor: "var(--accent)"
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Error saving question:", error);
+                      Swal.fire({
+                        title: "Lỗi kết nối",
+                        text: "Không thể kết nối tới máy chủ.",
+                        icon: "error",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "var(--accent)"
+                      });
+                    }
+                    setEditingQuestion(null); 
+                  }} 
+                  style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
+                >
                   Lưu thay đổi
                 </button>
               </div>
