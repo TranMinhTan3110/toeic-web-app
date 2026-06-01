@@ -5,6 +5,8 @@ import {
   Headphones, Mic, PenLine, BookOpen, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import ListeningManager from "../components/ListeningManager.jsx";
+import WritingManager from "../components/WritingManager.jsx";
+import SpeakingManager from "../components/SpeakingManager.jsx";
 
 
 // ─── Data per skill ────────────────────────────────────────────────────────
@@ -38,6 +40,7 @@ const SKILL_DATA = {
       { label: "Q3–4", val: "95", desc: "Describe Picture" },
       { label: "Q5–7", val: "110", desc: "Respond to Questions" },
       { label: "Q8–10", val: "88", desc: "Respond w/ Info" },
+      { label: "Q11", val: "50", desc: "Express Opinion" },
     ],
     questions: [
       { id: "S001", part: "Q1–2", type: "Read Aloud", content: "Read the following passage aloud clearly and naturally.", level: "Easy", status: "Active" },
@@ -85,7 +88,7 @@ const SKILL_DATA = {
 
 const SKILL_CARDS = [
   { id: "listening", label: "Listening", icon: Headphones, desc: "Parts 1–4 · 1,600 câu", color: "blue", cssColor: "var(--blue)", cssSoft: "var(--blue-soft)" },
-  { id: "speaking", label: "Speaking", icon: Mic, desc: "Q1–10 · 373 câu", color: "green", cssColor: "var(--green)", cssSoft: "var(--green-soft)" },
+  { id: "speaking", label: "Speaking", icon: Mic, desc: "Q1–11 · 373 câu", color: "green", cssColor: "var(--green)", cssSoft: "var(--green-soft)" },
   { id: "writing", label: "Writing", icon: PenLine, desc: "Q1–8 · 530 câu", color: "orange", cssColor: "var(--orange)", cssSoft: "var(--orange-soft)" },
   { id: "reading", label: "Reading", icon: BookOpen, desc: "Parts 5–7 · 1,820 câu", color: "purple", cssColor: "var(--accent)", cssSoft: "var(--accent-soft)" },
 ];
@@ -93,12 +96,57 @@ const SKILL_CARDS = [
 const levelColors = { Easy: "green", Medium: "orange", Hard: "red" };
 const statusColors = { Active: "green", Draft: "blue", Inactive: "orange" };
 
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5133/api").replace(/\/$/, "");
+
+const toTitleDifficulty = (difficulty) => {
+  const value = (difficulty || "medium").toLowerCase();
+  if (value === "easy") return "Easy";
+  if (value === "hard") return "Hard";
+  return "Medium";
+};
+
+const writingTypeLabel = (taskType) => {
+  if (taskType === "write_sentence") return "Write a Sentence";
+  if (taskType === "respond_email") return "Respond to Email";
+  if (taskType === "opinion_essay") return "Write an Opinion";
+  return taskType || "Writing";
+};
+
+const writingPartLabel = (question) => {
+  if (question.taskType === "write_sentence") return "Q1-5";
+  if (question.taskType === "respond_email") return "Q6-7";
+  if (question.taskType === "opinion_essay") return "Q8";
+  return question.taskNumber ? `Q${question.taskNumber}` : "Writing";
+};
+
+const toApiDifficulty = (level) => {
+  const value = (level || "Medium").toLowerCase();
+  if (value === "easy") return "easy";
+  if (value === "hard") return "hard";
+  return "medium";
+};
+
+const mapWritingQuestion = (q) => {
+  const id = q.id || "";
+  return {
+    id,
+    displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
+    part: writingPartLabel(q),
+    type: writingTypeLabel(q.taskType),
+    content: q.promptText || q.emailContent || "Writing prompt",
+    script: q.sampleAnswer || "",
+    level: toTitleDifficulty(q.difficulty),
+    status: q.isPractice === false ? "Draft" : "Active",
+    raw: q
+  };
+};
+
 // ─── Question list screen ──────────────────────────────────────────────────
 function SkillQuestions({ skillId }) {
   const [view, setView] = useState("list");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [partFilter, setPartFilter] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
@@ -108,15 +156,17 @@ function SkillQuestions({ skillId }) {
   const [editScript, setEditScript] = useState("");
 
   const [listeningData, setListeningData] = useState({ questions: [], loading: false, parts: SKILL_DATA.listening.parts });
-  
+  const [writingData, setWritingData] = useState({ questions: [], loading: false, parts: SKILL_DATA.writing.parts });
+  const [speakingData, setSpeakingData] = useState({ questions: [], loading: false, parts: SKILL_DATA.speaking.parts });
+
   useEffect(() => {
     setCurrentPage(1); // Reset page when skill changes
   }, [skillId]);
-  
+
   useEffect(() => {
     if (skillId === "listening") {
       setListeningData(prev => ({ ...prev, loading: true }));
-      fetch("http://localhost:5133/api/listening/admin/all")
+      fetch(`${API_BASE}/listening/admin/all`)
         .then(res => res.json())
         .then(data => {
           const mappedQuestions = data.map(q => {
@@ -125,13 +175,11 @@ function SkillQuestions({ skillId }) {
               id: id,
               displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
               part: `Part ${q.part}`,
-              partNum: q.part,
               type: q.part === 1 ? "Photographs" : q.part === 2 ? "Question-Response" : q.part === 3 ? "Conversations" : "Short Talks",
               content: q.questionText || "Câu hỏi Audio",
               script: q.script || "",
               level: q.difficulty || "Medium",
-              status: "Active",
-              groupId: q.groupId || ""
+              status: "Active"
             };
           });
           const p1 = data.filter(q => q.part === 1).length;
@@ -152,22 +200,94 @@ function SkillQuestions({ skillId }) {
           console.error(err);
           setListeningData(prev => ({ ...prev, loading: false }));
         });
+    } else if (skillId === "writing") {
+      setWritingData(prev => ({ ...prev, loading: true }));
+      fetch(`${API_BASE}/writing-questions/admin/all`)
+        .then(res => res.json())
+        .then(data => {
+          const items = Array.isArray(data) ? data : [];
+          const mappedQuestions = items.map(mapWritingQuestion);
+
+          const counts = items.reduce((acc, q) => {
+            acc[q.taskType] = (acc[q.taskType] || 0) + 1;
+            return acc;
+          }, {});
+
+          const parts = [
+            { label: "Q1-5", val: String(counts.write_sentence || 0), desc: "Write a Sentence" },
+            { label: "Q6-7", val: String(counts.respond_email || 0), desc: "Respond to Email" },
+            { label: "Q8", val: String(counts.opinion_essay || 0), desc: "Write an Opinion" },
+          ];
+
+          setWritingData({ questions: mappedQuestions, parts, loading: false });
+        })
+        .catch(err => {
+          console.error(err);
+          setWritingData(prev => ({ ...prev, loading: false }));
+        });
     }
   }, [skillId]);
 
-  const skill = skillId === "listening" 
-    ? { ...SKILL_DATA[skillId], questions: listeningData.questions, parts: listeningData.parts } 
+  useEffect(() => {
+    if (skillId === "speaking") {
+      setSpeakingData(prev => ({ ...prev, loading: true }));
+      fetch("http://localhost:5133/api/speaking/admin/all")
+        .then(res => res.json())
+        .then(data => {
+          const mappedQuestions = data.map(q => {
+            const id = q.id || "";
+            return {
+              id: id,
+              displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
+              part: `Q${q.taskNumber === 1 ? "1–2" : q.taskNumber === 2 ? "3–4" : q.taskNumber === 3 ? "5–7" : q.taskNumber === 4 ? "8–10" : "11"}`,
+              type: q.taskType || "Speaking Task",
+              content: q.promptText || "Câu hỏi Speaking",
+              script: q.promptText || "",
+              level: q.difficulty ? (q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)) : "Medium",
+              status: "Active"
+            };
+          });
+          const p1 = data.filter(q => q.taskNumber === 1).length;
+          const p2 = data.filter(q => q.taskNumber === 2).length;
+          const p3 = data.filter(q => q.taskNumber === 3).length;
+          const p4 = data.filter(q => q.taskNumber === 4).length;
+          const p5 = data.filter(q => q.taskNumber === 5).length;
+
+          const parts = [
+            { label: "Q1–2", val: p1.toString(), desc: "Read Aloud" },
+            { label: "Q3–4", val: p2.toString(), desc: "Describe Picture" },
+            { label: "Q5–7", val: p3.toString(), desc: "Respond to Questions" },
+            { label: "Q8–10", val: p4.toString(), desc: "Respond w/ Info" },
+            { label: "Q11", val: p5.toString(), desc: "Express Opinion" },
+          ];
+
+          setSpeakingData({ questions: mappedQuestions, parts, loading: false });
+        })
+        .catch(err => {
+          console.error(err);
+          setSpeakingData(prev => ({ ...prev, loading: false }));
+        });
+    }
+  }, [skillId]);
+
+  const skill = skillId === "listening"
+    ? { ...SKILL_DATA[skillId], questions: listeningData.questions, parts: listeningData.parts }
+    : skillId === "writing"
+      ? { ...SKILL_DATA[skillId], questions: writingData.questions, parts: writingData.parts }
+      : SKILL_DATA[skillId];
+    : skillId === "speaking"
+    ? { ...SKILL_DATA[skillId], questions: speakingData.questions, parts: speakingData.parts }
     : SKILL_DATA[skillId];
-    
+
   const card = SKILL_CARDS.find(c => c.id === skillId);
 
   const filteredQuestions = (skill.questions || []).filter(q => {
     const searchLower = (searchQuery || "").toLowerCase();
-    const matchSearch = 
-      (q.content || "").toLowerCase().includes(searchLower) || 
+    const matchSearch =
+      (q.content || "").toLowerCase().includes(searchLower) ||
       (q.id || "").toLowerCase().includes(searchLower) ||
       (q.script && q.script.toLowerCase().includes(searchLower));
-      
+
     const matchPart = partFilter ? q.part === partFilter : true;
     const matchLevel = levelFilter ? q.level.toLowerCase() === levelFilter.toLowerCase() : true;
     return matchSearch && matchPart && matchLevel;
@@ -176,11 +296,95 @@ function SkillQuestions({ skillId }) {
   const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
   const paginatedQuestions = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const handleSaveEdit = async () => {
+    if (!editingQuestion) return;
+
+    if (skillId !== "writing") {
+      Swal.fire({
+        title: "Chưa hỗ trợ",
+        text: "Chức năng sửa thật trên database hiện mới áp dụng cho Writing.",
+        icon: "info",
+        confirmButtonText: "Đồng ý",
+        confirmButtonColor: card.cssColor
+      });
+      return;
+    }
+
+    const raw = editingQuestion.raw || {};
+    const payload = {
+      ...raw,
+      id: editingQuestion.id,
+      promptText: (editingQuestion.content || "").trim(),
+      sampleAnswer: editingQuestion.script || "",
+      difficulty: toApiDifficulty(editingQuestion.level),
+      taskNumber: raw.taskNumber || (editingQuestion.part === "Q8" ? 8 : editingQuestion.part === "Q6-7" ? 6 : 1),
+      taskType: raw.taskType || "write_sentence",
+      promptImageUrl: raw.promptImageUrl || "",
+      givenWords: raw.givenWords || [],
+      emailContent: raw.emailContent || "",
+      emailQuestions: raw.emailQuestions || [],
+      timeLimit: raw.timeLimit || 10,
+      minWords: raw.minWords || 0,
+      maxWords: raw.maxWords || 0,
+      maxScore: raw.maxScore || 3,
+      scoringCriteria: raw.scoringCriteria || [],
+      sampleAnswerTranslation: raw.sampleAnswerTranslation || "",
+      explanationVietnamese: raw.explanationVietnamese || "",
+      topic: raw.topic || "",
+      examSetId: raw.examSetId || "",
+      isPractice: raw.isPractice !== false
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/writing-questions/admin/${editingQuestion.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || "Không thể lưu thay đổi vào database.");
+      }
+
+      const updatedQuestion = mapWritingQuestion({ ...payload, id: editingQuestion.id });
+      setWritingData(prev => ({
+        ...prev,
+        questions: prev.questions.map(q => q.id === editingQuestion.id ? updatedQuestion : q)
+      }));
+
+      Swal.fire({
+        title: "Thành công!",
+        text: "Đã lưu thay đổi vào database.",
+        icon: "success",
+        confirmButtonText: "Đồng ý",
+        confirmButtonColor: card.cssColor
+      });
+      setEditingQuestion(null);
+    } catch (err) {
+      console.error("Update writing question error:", err);
+      Swal.fire({
+        title: "Lỗi",
+        text: err.message || "Không thể cập nhật câu hỏi.",
+        icon: "error",
+        confirmButtonText: "Đồng ý",
+        confirmButtonColor: "#ef4444"
+      });
+    }
+  };
+
   // Lưu ý cho team: Khi các chức năng phức tạp hơn, mỗi tab kỹ năng (Listening, Speaking...) 
   // nên được tách ra thành một component/file riêng biệt (ví dụ: ListeningManager.jsx, SpeakingManager.jsx) 
   // để tránh conflict khi code chung.
   if (skillId === "listening" && view === "add") {
     return <ListeningManager onBack={() => setView("list")} />;
+  }
+
+  if (skillId === "writing" && view === "add") {
+    return <WritingManager onBack={() => setView("list")} />;
+  }
+  if (skillId === "speaking" && view === "add") {
+    return <SpeakingManager onBack={() => setView("list")} />;
   }
 
   return (
@@ -201,7 +405,8 @@ function SkillQuestions({ skillId }) {
             className="btn btn-primary"
             style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
             onClick={() => {
-              if (skillId === "listening") setView("add");
+              if (skillId === "listening" || skillId === "writing") setView("add");
+              if (skillId === "listening" || skillId === "speaking") setView("add");
               else {
                 Swal.fire({
                   title: "Thông báo",
@@ -234,8 +439,8 @@ function SkillQuestions({ skillId }) {
         <div className="toolbar">
           <div className="toolbar-search-wrap" style={{ flex: 1 }}>
             <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
-            <input 
-              className="toolbar-search" 
+            <input
+              className="toolbar-search"
               placeholder={`Tìm kiếm câu hỏi ${skill.label}...`}
               value={searchQuery}
               onChange={(e) => {
@@ -244,8 +449,8 @@ function SkillQuestions({ skillId }) {
               }}
             />
           </div>
-          <select 
-            className="btn btn-secondary" 
+          <select
+            className="btn btn-secondary"
             style={{ height: 36, outline: "none", cursor: "pointer" }}
             value={partFilter}
             onChange={(e) => { setPartFilter(e.target.value); setCurrentPage(1); }}
@@ -255,8 +460,8 @@ function SkillQuestions({ skillId }) {
               <option key={p.label} value={p.label}>{p.label}</option>
             ))}
           </select>
-          <select 
-            className="btn btn-secondary" 
+          <select
+            className="btn btn-secondary"
             style={{ height: 36, outline: "none", cursor: "pointer" }}
             value={levelFilter}
             onChange={(e) => { setLevelFilter(e.target.value); setCurrentPage(1); }}
@@ -300,7 +505,7 @@ function SkillQuestions({ skillId }) {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination */}
         {filteredQuestions.length > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
@@ -308,16 +513,16 @@ function SkillQuestions({ skillId }) {
               Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} trong số {filteredQuestions.length} câu hỏi
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 style={{ height: 32, padding: "0 12px", gap: 6 }}
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => p - 1)}
               >
                 <ChevronLeft size={14} /> Trước
               </button>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 style={{ height: 32, padding: "0 12px", gap: 6 }}
                 disabled={currentPage === totalPages || totalPages === 0}
                 onClick={() => setCurrentPage(p => p + 1)}
@@ -337,94 +542,35 @@ function SkillQuestions({ skillId }) {
               <X size={20} />
             </button>
             <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: 18, color: "var(--text)" }}>Chi tiết câu hỏi</h3>
-            
+
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", gap: 20 }}>
-                <div><span style={{color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4}}>Mã câu hỏi</span> <span style={{ fontFamily: "monospace", fontSize: 13 }}>{editingQuestion.id}</span></div>
-                <div><span style={{color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4}}>Part</span> <span className="badge" style={{ background: card.cssSoft, color: card.cssColor }}>{editingQuestion.part}</span></div>
-                <div><span style={{color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4}}>Độ khó</span> <span className={`badge ${levelColors[editingQuestion.level] || levelColors["Medium"]}`}>{editingQuestion.level}</span></div>
+                <div><span style={{ color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4 }}>Mã câu hỏi</span> <span style={{ fontFamily: "monospace", fontSize: 13 }}>{editingQuestion.id}</span></div>
+                <div><span style={{ color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4 }}>Part</span> <span className="badge" style={{ background: card.cssSoft, color: card.cssColor }}>{editingQuestion.part}</span></div>
+                <div><span style={{ color: "var(--text-tertiary)", fontSize: 12, display: "block", marginBottom: 4 }}>Độ khó</span> <span className={`badge ${levelColors[editingQuestion.level] || levelColors["Medium"]}`}>{editingQuestion.level}</span></div>
               </div>
-              
+
               <div>
-                <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Nội dung câu hỏi</span>
-                <textarea 
+                <span style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Nội dung câu hỏi</span>
+                <textarea
                   style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 80, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
+                  value={editingQuestion.content || ""}
+                  onChange={(e) => setEditingQuestion(prev => ({ ...prev, content: e.target.value }))}
                 />
               </div>
 
               <div>
-                <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Script (Kịch bản Audio)</span>
-                <textarea 
+                <span style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Script (Kịch bản Audio)</span>
+                <textarea
                   style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 120, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                  value={editScript}
-                  onChange={(e) => setEditScript(e.target.value)}
+                  value={editingQuestion.script || ""}
+                  onChange={(e) => setEditingQuestion(prev => ({ ...prev, script: e.target.value }))}
                 />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 8 }}>
                 <button className="btn btn-secondary" onClick={() => setEditingQuestion(null)}>Hủy</button>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={async () => {
-                    try {
-                      const response = await fetch(`http://localhost:5133/api/listening/admin/${editingQuestion.id}`, {
-                        method: "PUT",
-                        headers: {
-                          "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                          id: editingQuestion.id,
-                          part: editingQuestion.partNum,
-                          questionText: editContent,
-                          script: editScript,
-                          difficulty: editingQuestion.level,
-                          groupId: editingQuestion.groupId
-                        })
-                      });
-                      
-                      const result = await response.json();
-                      if (response.ok && result.success) {
-                        setListeningData(prev => ({
-                          ...prev,
-                          questions: prev.questions.map(q => 
-                            q.id === editingQuestion.id 
-                              ? { ...q, content: editContent, script: editScript } 
-                              : q
-                          )
-                        }));
-
-                        Swal.fire({
-                          title: "Thành công!",
-                          text: "Đã lưu thay đổi vào hệ thống!",
-                          icon: "success",
-                          confirmButtonText: "Đồng ý",
-                          confirmButtonColor: "var(--accent)"
-                        });
-                      } else {
-                        Swal.fire({
-                          title: "Thất bại",
-                          text: result.message || "Không thể lưu thay đổi vào hệ thống.",
-                          icon: "error",
-                          confirmButtonText: "Đồng ý",
-                          confirmButtonColor: "var(--accent)"
-                        });
-                      }
-                    } catch (error) {
-                      console.error("Error saving question:", error);
-                      Swal.fire({
-                        title: "Lỗi kết nối",
-                        text: "Không thể kết nối tới máy chủ.",
-                        icon: "error",
-                        confirmButtonText: "Đồng ý",
-                        confirmButtonColor: "var(--accent)"
-                      });
-                    }
-                    setEditingQuestion(null); 
-                  }} 
-                  style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
-                >
+                <button className="btn btn-primary" onClick={handleSaveEdit} style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}>
                   Lưu thay đổi
                 </button>
               </div>
@@ -442,62 +588,106 @@ function SkillQuestions({ skillId }) {
             </div>
             <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 18, color: "var(--text)" }}>Xác nhận xóa câu hỏi</h3>
             <p style={{ color: "var(--text-tertiary)", fontSize: 14, margin: "0 0 24px", lineHeight: 1.5 }}>
-              Bạn có chắc chắn muốn xóa câu hỏi <strong style={{color: "var(--text)"}}>{deletingQuestion.displayId || deletingQuestion.id}</strong> không? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa câu hỏi <strong style={{ color: "var(--text)" }}>{deletingQuestion.displayId || deletingQuestion.id}</strong> không? Hành động này không thể hoàn tác.
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setDeletingQuestion(null)}>Hủy bỏ</button>
-              <button 
-                className="btn btn-primary" 
-                style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }} 
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }}
                 onClick={async () => {
                   const targetId = deletingQuestion.id;
+                  const endpoint = skillId === "listening"
+                    ? `http://localhost:5133/api/listening/admin/${targetId}`
+                    : `http://localhost:5133/api/speaking/admin/${targetId}`;
                   try {
-                    const res = await fetch(`http://localhost:5133/api/listening/admin/${targetId}`, {
-                      method: "DELETE"
-                    });
-                    
-                    if (res.ok) {
-                      setListeningData(prev => ({
-                        ...prev,
-                        questions: prev.questions.filter(q => q.id !== targetId)
-                      }));
-
+                    if (skillId !== "listening" && skillId !== "writing") {
                       Swal.fire({
-                        title: "Đã xóa!",
-                        text: `Đã xóa câu hỏi ${deletingQuestion.displayId || targetId} thành công!`,
-                        icon: "success",
+                        title: "Thông báo",
+                        text: "Chức năng xóa backend hiện chỉ áp dụng cho Listening và Writing.",
+                        icon: "info",
                         confirmButtonText: "Đồng ý",
-                        confirmButtonColor: "#ef4444"
+                        confirmButtonColor: card.cssColor
+                      });
+                      setDeletingQuestion(null);
+                      return;
+                    }
+
+                    const deleteUrl = skillId === "writing"
+                      ? `${API_BASE}/writing-questions/admin/${targetId}`
+                      : `${API_BASE}/listening/admin/${targetId}`;
+                    const res = await fetch(deleteUrl, {
+                      const res = await fetch(endpoint, {
+                        method: "DELETE"
+                      });
+                      const deleteResult = await res.json().catch(() => null);
+
+                      if(res.ok && deleteResult?.success !== false) {
+                        if (skillId === "writing") {
+                      setWritingData(prev => ({
+                        ...prev,
+                        questions: prev.questions.filter(q => q.id !== targetId),
+                        parts: prev.parts.map(part => ({
+                          ...part,
+                          val: String(prev.questions.filter(q => q.id !== targetId && q.part === part.label).length)
+                        }))
+                      }));
+                    } else {
+                        setListeningData(prev => ({
+                      ...prev,
+                      questions: prev.questions.filter(q => q.id !== targetId)
+                    }));
+                      }
+              if (res.ok) {
+                      if (skillId === "listening") {
+                setListeningData(prev => ({
+                  ...prev,
+                  questions: prev.questions.filter(q => q.id !== targetId)
+                }));
+                      } else if (skillId === "speaking") {
+                setSpeakingData(prev => ({
+                  ...prev,
+                  questions: prev.questions.filter(q => q.id !== targetId)
+                }));
+                      }
+
+              Swal.fire({
+                title: "Đã xóa!",
+              text: `Đã xóa câu hỏi ${deletingQuestion.displayId || targetId} thành công!`,
+              icon: "success",
+              confirmButtonText: "Đồng ý",
+              confirmButtonColor: "#ef4444"
                       });
                     } else {
-                      Swal.fire({
-                        title: "Lỗi",
-                        text: "Không thể xóa câu hỏi trên hệ thống.",
-                        icon: "error",
-                        confirmButtonText: "Đồng ý",
-                        confirmButtonColor: "#ef4444"
-                      });
+                Swal.fire({
+                  title: "Lỗi",
+                  text: deleteResult?.message || "Không thể xóa câu hỏi trên hệ thống.",
+                  icon: "error",
+                  confirmButtonText: "Đồng ý",
+                  confirmButtonColor: "#ef4444"
+                });
                     }
                   } catch (err) {
-                    console.error("Delete error:", err);
-                    Swal.fire({
-                      title: "Lỗi kết nối",
-                      text: "Không thể kết nối đến máy chủ.",
-                      icon: "error",
-                      confirmButtonText: "Đồng ý",
-                      confirmButtonColor: "#ef4444"
+                console.error("Delete error:", err);
+              Swal.fire({
+                title: "Lỗi kết nối",
+              text: "Không thể kết nối đến máy chủ.",
+              icon: "error",
+              confirmButtonText: "Đồng ý",
+              confirmButtonColor: "#ef4444"
                     });
                   }
-                  setDeletingQuestion(null);
+              setDeletingQuestion(null);
                 }}
               >
-                Xóa câu hỏi
-              </button>
-            </div>
+              Xóa câu hỏi
+            </button>
           </div>
         </div>
-      )}
-    </div>
+        </div>
+  )
+}
+    </div >
   );
 }
 
