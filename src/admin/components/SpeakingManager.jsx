@@ -23,7 +23,7 @@ export default function SpeakingManager({ onBack }) {
 
   // Common metadata
   const [difficulty, setDifficulty] = useState("medium");
-  const [topic, setTopic] = useState("Business");
+  const [topic, setTopic] = useState("");
   const [examSetId, setExamSetId] = useState("");
   const [isPractice, setIsPractice] = useState(true);
   const [isExam, setIsExam] = useState(false);
@@ -533,13 +533,12 @@ export default function SpeakingManager({ onBack }) {
                   </div>
                   <div className="sm-form-group">
                     <label className="sm-label">Chủ đề (Topic)</label>
-                    <select className="sm-select" value={topic} onChange={e => setTopic(e.target.value)}>
-                      <option value="Business">Business (Kinh doanh)</option>
-                      <option value="Office">Office (Văn phòng)</option>
-                      <option value="Travel">Travel (Du lịch)</option>
-                      <option value="Daily Life">Daily Life (Đời sống)</option>
-                      <option value="Education">Education (Giáo dục)</option>
-                    </select>
+                    <input
+                      className="sm-input"
+                      value={topic}
+                      onChange={e => setTopic(e.target.value)}
+                      placeholder="Ví dụ: Business, Office, Travel..."
+                    />
                   </div>
                 </div>
 
