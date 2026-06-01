@@ -5,6 +5,7 @@ import {
   Headphones, Mic, PenLine, BookOpen, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import ListeningManager from "../components/ListeningManager.jsx";
+import WritingManager from "../components/WritingManager.jsx";
 
 
 // ─── Data per skill ────────────────────────────────────────────────────────
@@ -93,6 +94,51 @@ const SKILL_CARDS = [
 const levelColors = { Easy: "green", Medium: "orange", Hard: "red" };
 const statusColors = { Active: "green", Draft: "blue", Inactive: "orange" };
 
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5133/api").replace(/\/$/, "");
+
+const toTitleDifficulty = (difficulty) => {
+  const value = (difficulty || "medium").toLowerCase();
+  if (value === "easy") return "Easy";
+  if (value === "hard") return "Hard";
+  return "Medium";
+};
+
+const writingTypeLabel = (taskType) => {
+  if (taskType === "write_sentence") return "Write a Sentence";
+  if (taskType === "respond_email") return "Respond to Email";
+  if (taskType === "opinion_essay") return "Write an Opinion";
+  return taskType || "Writing";
+};
+
+const writingPartLabel = (question) => {
+  if (question.taskType === "write_sentence") return "Q1-5";
+  if (question.taskType === "respond_email") return "Q6-7";
+  if (question.taskType === "opinion_essay") return "Q8";
+  return question.taskNumber ? `Q${question.taskNumber}` : "Writing";
+};
+
+const toApiDifficulty = (level) => {
+  const value = (level || "Medium").toLowerCase();
+  if (value === "easy") return "easy";
+  if (value === "hard") return "hard";
+  return "medium";
+};
+
+const mapWritingQuestion = (q) => {
+  const id = q.id || "";
+  return {
+    id,
+    displayId: id.length > 10 ? id.substring(0, 5) + "..." + id.slice(-4) : id,
+    part: writingPartLabel(q),
+    type: writingTypeLabel(q.taskType),
+    content: q.promptText || q.emailContent || "Writing prompt",
+    script: q.sampleAnswer || "",
+    level: toTitleDifficulty(q.difficulty),
+    status: q.isPractice === false ? "Draft" : "Active",
+    raw: q
+  };
+};
+
 // ─── Question list screen ──────────────────────────────────────────────────
 function SkillQuestions({ skillId }) {
   const [view, setView] = useState("list");
@@ -106,6 +152,7 @@ function SkillQuestions({ skillId }) {
   const [deletingQuestion, setDeletingQuestion] = useState(null);
 
   const [listeningData, setListeningData] = useState({ questions: [], loading: false, parts: SKILL_DATA.listening.parts });
+  const [writingData, setWritingData] = useState({ questions: [], loading: false, parts: SKILL_DATA.writing.parts });
   
   useEffect(() => {
     setCurrentPage(1); // Reset page when skill changes
@@ -114,7 +161,7 @@ function SkillQuestions({ skillId }) {
   useEffect(() => {
     if (skillId === "listening") {
       setListeningData(prev => ({ ...prev, loading: true }));
-      fetch("http://localhost:5133/api/listening/admin/all")
+      fetch(`${API_BASE}/listening/admin/all`)
         .then(res => res.json())
         .then(data => {
           const mappedQuestions = data.map(q => {
@@ -148,12 +195,39 @@ function SkillQuestions({ skillId }) {
           console.error(err);
           setListeningData(prev => ({ ...prev, loading: false }));
         });
+    } else if (skillId === "writing") {
+      setWritingData(prev => ({ ...prev, loading: true }));
+      fetch(`${API_BASE}/writing-questions/admin/all`)
+        .then(res => res.json())
+        .then(data => {
+          const items = Array.isArray(data) ? data : [];
+          const mappedQuestions = items.map(mapWritingQuestion);
+
+          const counts = items.reduce((acc, q) => {
+            acc[q.taskType] = (acc[q.taskType] || 0) + 1;
+            return acc;
+          }, {});
+
+          const parts = [
+            { label: "Q1-5", val: String(counts.write_sentence || 0), desc: "Write a Sentence" },
+            { label: "Q6-7", val: String(counts.respond_email || 0), desc: "Respond to Email" },
+            { label: "Q8", val: String(counts.opinion_essay || 0), desc: "Write an Opinion" },
+          ];
+
+          setWritingData({ questions: mappedQuestions, parts, loading: false });
+        })
+        .catch(err => {
+          console.error(err);
+          setWritingData(prev => ({ ...prev, loading: false }));
+        });
     }
   }, [skillId]);
 
   const skill = skillId === "listening" 
     ? { ...SKILL_DATA[skillId], questions: listeningData.questions, parts: listeningData.parts } 
-    : SKILL_DATA[skillId];
+    : skillId === "writing"
+      ? { ...SKILL_DATA[skillId], questions: writingData.questions, parts: writingData.parts }
+      : SKILL_DATA[skillId];
     
   const card = SKILL_CARDS.find(c => c.id === skillId);
 
@@ -172,11 +246,92 @@ function SkillQuestions({ skillId }) {
   const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
   const paginatedQuestions = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const handleSaveEdit = async () => {
+    if (!editingQuestion) return;
+
+    if (skillId !== "writing") {
+      Swal.fire({
+        title: "Chưa hỗ trợ",
+        text: "Chức năng sửa thật trên database hiện mới áp dụng cho Writing.",
+        icon: "info",
+        confirmButtonText: "Đồng ý",
+        confirmButtonColor: card.cssColor
+      });
+      return;
+    }
+
+    const raw = editingQuestion.raw || {};
+    const payload = {
+      ...raw,
+      id: editingQuestion.id,
+      promptText: (editingQuestion.content || "").trim(),
+      sampleAnswer: editingQuestion.script || "",
+      difficulty: toApiDifficulty(editingQuestion.level),
+      taskNumber: raw.taskNumber || (editingQuestion.part === "Q8" ? 8 : editingQuestion.part === "Q6-7" ? 6 : 1),
+      taskType: raw.taskType || "write_sentence",
+      promptImageUrl: raw.promptImageUrl || "",
+      givenWords: raw.givenWords || [],
+      emailContent: raw.emailContent || "",
+      emailQuestions: raw.emailQuestions || [],
+      timeLimit: raw.timeLimit || 10,
+      minWords: raw.minWords || 0,
+      maxWords: raw.maxWords || 0,
+      maxScore: raw.maxScore || 3,
+      scoringCriteria: raw.scoringCriteria || [],
+      sampleAnswerTranslation: raw.sampleAnswerTranslation || "",
+      explanationVietnamese: raw.explanationVietnamese || "",
+      topic: raw.topic || "",
+      examSetId: raw.examSetId || "",
+      isPractice: raw.isPractice !== false
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/writing-questions/admin/${editingQuestion.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || "Không thể lưu thay đổi vào database.");
+      }
+
+      const updatedQuestion = mapWritingQuestion({ ...payload, id: editingQuestion.id });
+      setWritingData(prev => ({
+        ...prev,
+        questions: prev.questions.map(q => q.id === editingQuestion.id ? updatedQuestion : q)
+      }));
+
+      Swal.fire({
+        title: "Thành công!",
+        text: "Đã lưu thay đổi vào database.",
+        icon: "success",
+        confirmButtonText: "Đồng ý",
+        confirmButtonColor: card.cssColor
+      });
+      setEditingQuestion(null);
+    } catch (err) {
+      console.error("Update writing question error:", err);
+      Swal.fire({
+        title: "Lỗi",
+        text: err.message || "Không thể cập nhật câu hỏi.",
+        icon: "error",
+        confirmButtonText: "Đồng ý",
+        confirmButtonColor: "#ef4444"
+      });
+    }
+  };
+
   // Lưu ý cho team: Khi các chức năng phức tạp hơn, mỗi tab kỹ năng (Listening, Speaking...) 
   // nên được tách ra thành một component/file riêng biệt (ví dụ: ListeningManager.jsx, SpeakingManager.jsx) 
   // để tránh conflict khi code chung.
   if (skillId === "listening" && view === "add") {
     return <ListeningManager onBack={() => setView("list")} />;
+  }
+
+  if (skillId === "writing" && view === "add") {
+    return <WritingManager onBack={() => setView("list")} />;
   }
 
   return (
@@ -197,7 +352,7 @@ function SkillQuestions({ skillId }) {
             className="btn btn-primary"
             style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
             onClick={() => {
-              if (skillId === "listening") setView("add");
+              if (skillId === "listening" || skillId === "writing") setView("add");
               else {
                 Swal.fire({
                   title: "Thông báo",
@@ -345,7 +500,8 @@ function SkillQuestions({ skillId }) {
                 <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Nội dung câu hỏi</span>
                 <textarea 
                   style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 80, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                  defaultValue={editingQuestion.content}
+                  value={editingQuestion.content || ""}
+                  onChange={(e) => setEditingQuestion(prev => ({ ...prev, content: e.target.value }))}
                 />
               </div>
 
@@ -353,22 +509,14 @@ function SkillQuestions({ skillId }) {
                 <span style={{color: "var(--text)", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8}}>Script (Kịch bản Audio)</span>
                 <textarea 
                   style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-secondary)", minHeight: 120, fontSize: 14, color: "var(--text)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                  defaultValue={editingQuestion.script || "Chưa có kịch bản"}
+                  value={editingQuestion.script || ""}
+                  onChange={(e) => setEditingQuestion(prev => ({ ...prev, script: e.target.value }))}
                 />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 8 }}>
                 <button className="btn btn-secondary" onClick={() => setEditingQuestion(null)}>Hủy</button>
-                <button className="btn btn-primary" onClick={() => { 
-                  Swal.fire({
-                    title: "Thành công!",
-                    text: "Đã lưu thay đổi vào hệ thống (giả lập)!",
-                    icon: "success",
-                    confirmButtonText: "Đồng ý",
-                    confirmButtonColor: "var(--accent)"
-                  });
-                  setEditingQuestion(null); 
-                }} style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}>
+                <button className="btn btn-primary" onClick={handleSaveEdit} style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}>
                   Lưu thay đổi
                 </button>
               </div>
@@ -396,15 +544,42 @@ function SkillQuestions({ skillId }) {
                 onClick={async () => {
                   const targetId = deletingQuestion.id;
                   try {
-                    const res = await fetch(`http://localhost:5133/api/listening/admin/${targetId}`, {
+                    if (skillId !== "listening" && skillId !== "writing") {
+                      Swal.fire({
+                        title: "Thông báo",
+                        text: "Chức năng xóa backend hiện chỉ áp dụng cho Listening và Writing.",
+                        icon: "info",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: card.cssColor
+                      });
+                      setDeletingQuestion(null);
+                      return;
+                    }
+
+                    const deleteUrl = skillId === "writing"
+                      ? `${API_BASE}/writing-questions/admin/${targetId}`
+                      : `${API_BASE}/listening/admin/${targetId}`;
+                    const res = await fetch(deleteUrl, {
                       method: "DELETE"
                     });
+                    const deleteResult = await res.json().catch(() => null);
                     
-                    if (res.ok) {
-                      setListeningData(prev => ({
-                        ...prev,
-                        questions: prev.questions.filter(q => q.id !== targetId)
-                      }));
+                    if (res.ok && deleteResult?.success !== false) {
+                      if (skillId === "writing") {
+                        setWritingData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId),
+                          parts: prev.parts.map(part => ({
+                            ...part,
+                            val: String(prev.questions.filter(q => q.id !== targetId && q.part === part.label).length)
+                          }))
+                        }));
+                      } else {
+                        setListeningData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId)
+                        }));
+                      }
 
                       Swal.fire({
                         title: "Đã xóa!",
@@ -416,7 +591,7 @@ function SkillQuestions({ skillId }) {
                     } else {
                       Swal.fire({
                         title: "Lỗi",
-                        text: "Không thể xóa câu hỏi trên hệ thống.",
+                        text: deleteResult?.message || "Không thể xóa câu hỏi trên hệ thống.",
                         icon: "error",
                         confirmButtonText: "Đồng ý",
                         confirmButtonColor: "#ef4444"
