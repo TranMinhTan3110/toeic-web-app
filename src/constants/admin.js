@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BookOpen, BookMarked, FileText, Users, Bot,
-  AlertCircle, Brain, GraduationCap
+  AlertCircle, Brain, GraduationCap, Shield
 } from "lucide-react";
 
 export const NAV = [
@@ -10,6 +10,7 @@ export const NAV = [
   { id: "grammar", label: "Quản lý Ngữ pháp", icon: GraduationCap, badge: null },
   { id: "exam", label: "Quản lý Đề thi", icon: FileText, badge: null },
   { id: "users", label: "Quản lý Người dùng", icon: Users, badge: null },
+  { id: "admins", label: "Quản lý Admin", icon: Shield, badge: null },
 ];
 
 export const PAGE_TITLES = {
@@ -19,6 +20,7 @@ export const PAGE_TITLES = {
   grammar: "Quản lý Ngữ pháp",
   exam: "Quản lý Đề thi",
   users: "Quản lý Người dùng",
+  admins: "Quản lý Admin",
   profile: "Thông tin tài khoản",
 };
 

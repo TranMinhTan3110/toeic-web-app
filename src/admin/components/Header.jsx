@@ -85,7 +85,7 @@ export default function Header({ page, setPage, dark, setDark }) {
 
   const adminName = profile?.displayName || user?.displayName || "Học viên TOEIC";
   const adminEmail = profile?.email || user?.email || "hocvien@toeicmaster.vn";
-  const adminRole = profile?.role === "admin" ? "Super Admin" : (profile?.role === "teacher" ? "Giáo viên" : "Học viên");
+  const adminRole = profile?.role === "superadmin" ? "Super Admin" : (profile?.role === "admin" ? "Admin" : (profile?.role === "teacher" ? "Giáo viên" : "Học viên"));
 
   return (
     <header className="header">
