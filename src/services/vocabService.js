@@ -52,6 +52,15 @@ export const vocabService = {
     const response = await apiClient.post("/vocabularies/bulk", list);
     return response.data;
   },
+
+  /**
+   * Lấy danh sách chủ đề (topics) động từ database
+   */
+  getTopics: async () => {
+    const response = await apiClient.get("/vocabularies/topics");
+    return response.data;
+  },
 };
 
 export default vocabService;
+

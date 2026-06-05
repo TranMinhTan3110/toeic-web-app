@@ -642,6 +642,8 @@ function SkillQuestions({ skillId }) {
                     deleteUrl = `${API_BASE}/writing-questions/admin/${targetId}`;
                   } else if (skillId === "listening") {
                     deleteUrl = `${API_BASE}/listening/admin/${targetId}`;
+                  } else if (skillId === "speaking") {
+                    deleteUrl = `${API_BASE}/speaking/admin/${targetId}`;
                   } else if (skillId === "reading") {
                     deleteUrl = `${API_BASE}/reading/admin/${targetId}`;
                   } else {
@@ -675,6 +677,11 @@ function SkillQuestions({ skillId }) {
                         });
                       } else if (skillId === "listening") {
                         setListeningData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId)
+                        }));
+                      } else if (skillId === "speaking") {
+                        setSpeakingData(prev => ({
                           ...prev,
                           questions: prev.questions.filter(q => q.id !== targetId)
                         }));
