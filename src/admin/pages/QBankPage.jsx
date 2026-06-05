@@ -272,10 +272,9 @@ function SkillQuestions({ skillId }) {
     ? { ...SKILL_DATA[skillId], questions: listeningData.questions, parts: listeningData.parts }
     : skillId === "writing"
       ? { ...SKILL_DATA[skillId], questions: writingData.questions, parts: writingData.parts }
-      : SKILL_DATA[skillId];
-    : skillId === "speaking"
-    ? { ...SKILL_DATA[skillId], questions: speakingData.questions, parts: speakingData.parts }
-    : SKILL_DATA[skillId];
+      : skillId === "speaking"
+        ? { ...SKILL_DATA[skillId], questions: speakingData.questions, parts: speakingData.parts }
+        : SKILL_DATA[skillId];
 
   const card = SKILL_CARDS.find(c => c.id === skillId);
 
@@ -403,9 +402,9 @@ function SkillQuestions({ skillId }) {
             className="btn btn-primary"
             style={{ background: card.cssColor, boxShadow: `0 4px 14px ${card.cssSoft}` }}
             onClick={() => {
-              if (skillId === "listening" || skillId === "writing") setView("add");
-              if (skillId === "listening" || skillId === "speaking") setView("add");
-              else {
+              if (skillId === "listening" || skillId === "writing" || skillId === "speaking") {
+                setView("add");
+              } else {
                 Swal.fire({
                   title: "Thông báo",
                   text: `Giao diện thêm câu hỏi kỹ năng ${skill.label} đang được phát triển.`,
@@ -595,78 +594,72 @@ function SkillQuestions({ skillId }) {
                 style={{ flex: 1, background: "#ef4444", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.2)" }}
                 onClick={async () => {
                   const targetId = deletingQuestion.id;
-                  const endpoint = skillId === "listening"
-                    ? `http://localhost:5133/api/listening/admin/${targetId}`
-                    : `http://localhost:5133/api/speaking/admin/${targetId}`;
+                  if (skillId !== "listening" && skillId !== "writing" && skillId !== "speaking") {
+                    Swal.fire({
+                      title: "Thông báo",
+                      text: "Chức năng xóa backend hiện chỉ áp dụng cho Listening, Writing và Speaking.",
+                      icon: "info",
+                      confirmButtonText: "Đồng ý",
+                      confirmButtonColor: card.cssColor
+                    });
+                    setDeletingQuestion(null);
+                    return;
+                  }
+
+                  let deleteUrl = "";
+                  if (skillId === "writing") {
+                    deleteUrl = `${API_BASE}/writing-questions/admin/${targetId}`;
+                  } else if (skillId === "listening") {
+                    deleteUrl = `${API_BASE}/listening/admin/${targetId}`;
+                  } else if (skillId === "speaking") {
+                    deleteUrl = `${API_BASE}/speaking/admin/${targetId}`;
+                  }
+
                   try {
-                    if (skillId !== "listening" && skillId !== "writing") {
-                      Swal.fire({
-                        title: "Thông báo",
-                        text: "Chức năng xóa backend hiện chỉ áp dụng cho Listening và Writing.",
-                        icon: "info",
-                        confirmButtonText: "Đồng ý",
-                        confirmButtonColor: card.cssColor
-                      });
-                      setDeletingQuestion(null);
-                      return;
-                    }
-
-                    const deleteUrl = skillId === "writing"
-                      ? `${API_BASE}/writing-questions/admin/${targetId}`
-                      : `${API_BASE}/listening/admin/${targetId}`;
                     const res = await fetch(deleteUrl, {
-                      const res = await fetch(endpoint, {
-                        method: "DELETE"
-                      });
-                      const deleteResult = await res.json().catch(() => null);
+                      method: "DELETE"
+                    });
+                    const deleteResult = await res.json().catch(() => null);
 
-                      if(res.ok && deleteResult?.success !== false) {
-                        if (skillId === "writing") {
-                      setWritingData(prev => ({
-                        ...prev,
-                        questions: prev.questions.filter(q => q.id !== targetId),
-                        parts: prev.parts.map(part => ({
-                          ...part,
-                          val: String(prev.questions.filter(q => q.id !== targetId && q.part === part.label).length)
-                        }))
-                      }));
-                    } else {
+                    if (res.ok && deleteResult?.success !== false) {
+                      if (skillId === "writing") {
+                        setWritingData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId),
+                          parts: prev.parts.map(part => ({
+                            ...part,
+                            val: String(prev.questions.filter(q => q.id !== targetId && q.part === part.label).length)
+                          }))
+                        }));
+                      } else if (skillId === "listening") {
                         setListeningData(prev => ({
-                      ...prev,
-                      questions: prev.questions.filter(q => q.id !== targetId)
-                    }));
-                      }
-              if (res.ok) {
-                      if (skillId === "listening") {
-                setListeningData(prev => ({
-                  ...prev,
-                  questions: prev.questions.filter(q => q.id !== targetId)
-                }));
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId)
+                        }));
                       } else if (skillId === "speaking") {
-                setSpeakingData(prev => ({
-                  ...prev,
-                  questions: prev.questions.filter(q => q.id !== targetId)
-                }));
+                        setSpeakingData(prev => ({
+                          ...prev,
+                          questions: prev.questions.filter(q => q.id !== targetId)
+                        }));
                       }
 
-              Swal.fire({
-                title: "Đã xóa!",
-              text: `Đã xóa câu hỏi ${deletingQuestion.displayId || targetId} thành công!`,
-              icon: "success",
-              confirmButtonText: "Đồng ý",
-              confirmButtonColor: "#ef4444"
+                      Swal.fire({
+                        title: "Đã xóa!",
+                        text: `Đã xóa câu hỏi ${deletingQuestion.displayId || targetId} thành công!`,
+                        icon: "success",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "#ef4444"
                       });
                     } else {
-                Swal.fire({
-                  title: "Lỗi",
-                  text: deleteResult?.message || "Không thể xóa câu hỏi trên hệ thống.",
-                  icon: "error",
-                  confirmButtonText: "Đồng ý",
-                  confirmButtonColor: "#ef4444"
-                });
+                      Swal.fire({
+                        title: "Lỗi",
+                        text: deleteResult?.message || "Không thể xóa câu hỏi trên hệ thống.",
+                        icon: "error",
+                        confirmButtonText: "Đồng ý",
+                        confirmButtonColor: "#ef4444"
+                      });
                     }
                   } catch (err) {
-                console.error("Delete error:", err);
               Swal.fire({
                 title: "Lỗi kết nối",
               text: "Không thể kết nối đến máy chủ.",

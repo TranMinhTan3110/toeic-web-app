@@ -42,7 +42,22 @@ export default function VocabPage() {
     examples: [{ sentence: "", sentenceVi: "" }],
   });
 
-  const topics = ["Tất cả", "business", "office", "travel", "finance", "health"];
+  const [topics, setTopics] = useState(["Tất cả"]);
+
+  const fetchTopics = async () => {
+    try {
+      const data = await vocabService.getTopics();
+      if (Array.isArray(data)) {
+        setTopics(["Tất cả", ...data]);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách chủ đề:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopics();
+  }, []);
 
   // Xử lý Debounce tìm kiếm để tránh gọi API dồn dập khi gõ phím
   useEffect(() => {
@@ -216,6 +231,7 @@ export default function VocabPage() {
       }
       closeModal();
       fetchVocabularies();
+      fetchTopics();
     } catch (error) {
       console.error("Lỗi khi lưu từ vựng:", error);
       Swal.fire({
@@ -257,6 +273,7 @@ export default function VocabPage() {
           });
           // Cập nhật State cục bộ để xóa từ khỏi danh sách ngay lập tức trên UI mà không cần gọi API tải lại toàn bộ
           setVocabList((prevList) => prevList.filter((item) => item.id !== vocab.id));
+          fetchTopics();
         } catch (error) {
           console.error("Lỗi khi xóa từ vựng:", error);
           Swal.fire({
@@ -383,6 +400,7 @@ export default function VocabPage() {
       setParsedImportData([]);
       setImportFileName("");
       fetchVocabularies();
+      fetchTopics();
     } catch (error) {
       console.error("Lỗi khi import hàng loạt:", error);
       Swal.fire({
