@@ -11,6 +11,7 @@ import VocabPage from "./pages/VocabPage.jsx";
 import GrammarPage from "./pages/GrammarPage.jsx";
 import ExamPage from "./pages/ExamPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
+import AdminsPage from "./pages/AdminsPage.jsx";
 import AIPage from "./pages/AIPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 
@@ -21,6 +22,7 @@ const PAGES = {
   grammar: GrammarPage,
   exam: ExamPage,
   users: UsersPage,
+  admins: AdminsPage,
   ai: AIPage,
   profile: ProfilePage,
 };

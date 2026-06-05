@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, Filter, ShieldAlert, UserCheck, UserX, Loader2, ChevronLeft, ChevronRight, Shield } from "lucide-react";
-import { getAllUsersForAdmin, lockUser, unlockUser } from "../../services/userService";
+import { getAllUsersForAdmin, lockUser, unlockUser, assignRole } from "../../services/userService";
+import Swal from "sweetalert2";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -8,7 +9,7 @@ export default function UsersPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [roleFilter] = useState("user");
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,27 +52,116 @@ export default function UsersPage() {
     }
   };
 
-  const handleLock = async (userId) => {
+  const handleLock = async (u) => {
+    const result = await Swal.fire({
+      title: "Khóa tài khoản?",
+      text: `Bạn có chắc chắn muốn khóa tài khoản của "${u.displayName || u.email}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Khóa",
+      cancelButtonText: "Hủy",
+      background: "var(--bg-secondary)",
+      color: "var(--text)",
+      confirmButtonColor: "var(--red)",
+      cancelButtonColor: "var(--border-strong)",
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
-      await lockUser(userId);
+      await lockUser(u.uid);
       setUsers((prev) =>
-        prev.map((u) => (u.uid === userId ? { ...u, isLocked: true } : u))
+        prev.map((item) => (item.uid === u.uid ? { ...item, isLocked: true } : item))
       );
+      Swal.fire({
+        icon: "success",
+        title: "Đã khóa!",
+        text: "Người dùng đã được khóa thành công.",
+        background: "var(--bg-secondary)",
+        color: "var(--text)",
+        confirmButtonColor: "var(--accent)",
+        timer: 1500,
+      });
     } catch (err) {
       console.error("Lock error:", err);
-      alert("Không thể khóa người dùng.");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể khóa người dùng.",
+        background: "var(--bg-secondary)",
+        color: "var(--text)",
+        confirmButtonColor: "var(--accent)",
+      });
     }
   };
 
-  const handleUnlock = async (userId) => {
+  const handleUnlock = async (u) => {
     try {
-      await unlockUser(userId);
+      await unlockUser(u.uid);
       setUsers((prev) =>
-        prev.map((u) => (u.uid === userId ? { ...u, isLocked: false } : u))
+        prev.map((item) => (item.uid === u.uid ? { ...item, isLocked: false } : item))
       );
+      Swal.fire({
+        icon: "success",
+        title: "Thành công",
+        text: "Đã mở khóa tài khoản người dùng.",
+        background: "var(--bg-secondary)",
+        color: "var(--text)",
+        confirmButtonColor: "var(--accent)",
+        timer: 1500,
+      });
     } catch (err) {
       console.error("Unlock error:", err);
-      alert("Không thể mở khóa người dùng.");
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể mở khóa người dùng.",
+        background: "var(--bg-secondary)",
+        color: "var(--text)",
+        confirmButtonColor: "var(--accent)",
+      });
+    }
+  };
+
+  const handlePromote = async (u) => {
+    const result = await Swal.fire({
+      title: "Thăng chức Admin?",
+      text: `Bạn có chắc chắn muốn cấp quyền Admin cho "${u.displayName || u.email}"? Người học này sẽ được chuyển sang danh sách Admin.`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Cấp quyền",
+      cancelButtonText: "Hủy",
+      background: "var(--bg-secondary)",
+      color: "var(--text)",
+      confirmButtonColor: "var(--accent)",
+      cancelButtonColor: "var(--border-strong)",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await assignRole(u.uid, "admin");
+      setUsers((prev) => prev.filter((item) => item.uid !== u.uid));
+      setTotalCount((prev) => prev - 1);
+      Swal.fire({
+        icon: "success",
+        title: "Thành công!",
+        text: "Đã thăng chức người học lên làm Admin.",
+        background: "var(--bg-secondary)",
+        color: "var(--text)",
+        confirmButtonColor: "var(--accent)",
+        timer: 1500,
+      });
+    } catch (err) {
+      console.error("Promote error:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể cấp quyền Admin.",
+        background: "var(--bg-secondary)",
+        color: "var(--text)",
+        confirmButtonColor: "var(--accent)",
+      });
     }
   };
 
@@ -143,32 +233,6 @@ export default function UsersPage() {
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang hoạt động</option>
               <option value="locked">Bị khóa</option>
-            </select>
-          </div>
-
-          {/* Role Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Shield size={14} style={{ color: "var(--text-secondary)" }} />
-            <select
-              value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
-                setCurrentPage(1); // Reset page on filter
-              }}
-              className="btn btn-secondary"
-              style={{
-                height: 36,
-                padding: "0 24px 0 12px",
-                outline: "none",
-                cursor: "pointer",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              <option value="all">Tất cả vai trò</option>
-              <option value="user">User (Người học)</option>
-              <option value="admin">Admin (Quản trị)</option>
             </select>
           </div>
         </div>
@@ -281,7 +345,7 @@ export default function UsersPage() {
 
                 <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <button
-                    onClick={() => handleLock(u.uid)}
+                    onClick={() => handleLock(u)}
                     disabled={u.isLocked}
                     className="btn"
                     style={{
@@ -299,7 +363,7 @@ export default function UsersPage() {
                     Khóa
                   </button>
                   <button
-                    onClick={() => handleUnlock(u.uid)}
+                    onClick={() => handleUnlock(u)}
                     disabled={!u.isLocked}
                     className="btn"
                     style={{
@@ -317,6 +381,24 @@ export default function UsersPage() {
                     Mở khóa
                   </button>
                 </div>
+                <button
+                  onClick={() => handlePromote(u)}
+                  className="btn btn-secondary"
+                  style={{
+                    width: "100%",
+                    justifyContent: "center",
+                    marginTop: 8,
+                    fontSize: "12px",
+                    padding: "8px 12px",
+                    gap: 6,
+                    color: "var(--accent)",
+                    borderColor: "var(--accent-soft)",
+                    display: "flex",
+                    alignItems: "center"
+                  }}
+                >
+                  <Shield size={12} /> Cấp quyền Admin
+                </button>
               </div>
             ))}
           </div>
