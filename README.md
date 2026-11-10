@@ -1,183 +1,158 @@
-# 📘 Hướng Dẫn Dự Án ReactJS Frontend — Dành Cho Nhóm Frontend
+# 💻 TOEIC Learning Platform — Web Admin Portal (ReactJS)
 
-> **Mục tiêu:** Giúp nhóm Frontend hiểu rõ kiến trúc thư mục, chức năng từng loại component và luồng tương tác rõ ràng giữa **Frontend (ReactJS) <-> Firebase <-> Backend (ASP.NET Core)**.
+[![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5.2-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Redux Toolkit](https://img.shields.io/badge/Redux-Toolkit-764ABC?logo=redux&logoColor=white)](https://redux-toolkit.js.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Deployment](https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+> Cổng thông tin quản trị trung tâm (Web Admin Portal) phục vụ hệ sinh thái luyện thi TOEIC 4 kỹ năng. Ứng dụng cung cấp bảng điều khiển thống kê (Dashboard Analytics), hệ thống quản lý ngân hàng câu hỏi (QBank CRUD), tạo và chỉnh sửa đề thi linh hoạt, công cụ import dữ liệu hàng loạt từ file Excel/CSV và quản lý phân quyền người dùng/quản trị viên.
 
 ---
 
-## 🚀 0. Cài Đặt & Chạy Giao Diện (Đọc trước khi làm bất cứ điều gì!)
+## 🌐 Hệ Sinh Thái Dự Án (Ecosystem Repositories)
 
-> Làm đúng thứ tự bên dưới. Chỉ cần làm **bước 1 một lần duy nhất** trên máy mới clone về.
+Hệ thống được thiết kế theo kiến trúc Client-Server đồng bộ giữa 3 thành phần:
 
-### Yêu cầu trước
+* 🚀 **Backend API (.NET 9):** [https://github.com/TranMinhTan3110/toeic-backend-api](https://github.com/TranMinhTan3110/toeic-backend-api)  
+  *Core RESTful API, Clean Architecture, Firestore NoSQL, Hybrid AI Engine (Gemini & OpenAI), Docker, AWS EC2.*
+* 📱 **Mobile Client (Flutter):** [https://github.com/TranMinhTan3110/toeic-mobile-app](https://github.com/TranMinhTan3110/toeic-mobile-app)  
+  *Ứng dụng di động luyện thi 4 kỹ năng TOEIC, học từ vựng SRS và bảng xếp hạng Leaderboard.*
+* 💻 **Web Admin Portal (ReactJS):** [https://github.com/TranMinhTan3110/toeic-web-app](https://github.com/TranMinhTan3110/toeic-web-app) *(Repo này)*  
+  *Trang web quản trị dành cho Quản trị viên và Giáo viên.*
 
-| Công cụ | Phiên bản tối thiểu | Link tải |
-|---|---|---|
-| **Node.js** | v18 trở lên | https://nodejs.org |
-| **Git** | Bất kỳ | https://git-scm.com |
+---
 
-Kiểm tra đã cài chưa:
-```bash
-node -v   # phải ra v18.x.x trở lên
-npm -v    # phải ra 9.x.x trở lên
+## 📸 Giao Diện Quản Trị (Admin Portal Screenshots)
+
+<div align="center">
+  <table style="border: none;">
+    <tr>
+      <td align="center"><img src="docs/screenshots/dashboard.png" width="380px" alt="Admin Dashboard"/><br/><b>Dashboard & Thống kê tăng trưởng</b></td>
+      <td align="center"><img src="docs/screenshots/qbank.png" width="380px" alt="Quản lý ngân hàng câu hỏi"/><br/><b>Quản lý QBank 4 kỹ năng</b></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="docs/screenshots/exam_editor.png" width="380px" alt="Tạo đề thi TOEIC"/><br/><b>Tạo & Soạn thảo đề thi</b></td>
+      <td align="center"><img src="docs/screenshots/user_management.png" width="380px" alt="Phân quyền Admin"/><br/><b>Quản lý tài khoản & Phân quyền</b></td>
+    </tr>
+  </table>
+</div>
+
+> *Tip: Chụp ảnh màn hình thực tế của Web Admin đặt vào thư mục `docs/screenshots/` theo đúng tên trên để ảnh tự động hiển thị trên GitHub!*
+
+---
+
+## ✨ Tính Năng Nổi Bật (Key Features)
+
+### 1. 📊 Bảng Điều Khiển Thống Kê (Dashboard Analytics)
+* Hiển thị số lượng học viên, số lượt thi và tăng trưởng tài khoản đăng ký mới theo tuần.
+* Biểu đồ tương tác mượt mà với tooltip chi tiết và hiệu ứng khung xương (Shimmer loading) khi tải dữ liệu.
+
+### 2. 📚 Ngân Hàng Câu Hỏi (Question Bank Management - QBank)
+* Quản lý tập trung toàn diện câu hỏi cho cả 4 kỹ năng: **Listening (Part 1 - 4)**, **Reading (Part 5 - 7)**, **Speaking** và **Writing**.
+* Thao tác CRUD trực quan: Xem trước nội dung, phát thử file audio nghe, hiển thị hình ảnh câu hỏi và đáp án giải thích chi tiết.
+
+### 3. 📝 Soạn Thảo & Quản Lý Đề Thi (Exam Manager & Editor)
+* Tạo mới các bộ đề thi thử (Exam Sets) theo cấu trúc chuẩn TOEIC ETS.
+* Ghép câu hỏi từ ngân hàng câu hỏi vào từng Part của đề thi dễ dàng.
+
+### 4. 📥 Tải Lên Hàng Loạt Từ Excel / CSV (Bulk Import)
+* Hỗ trợ tải file bảng tính Excel/CSV theo mẫu chuẩn có sẵn để import hàng trăm câu hỏi cùng lúc, giảm thiểu 90% thời gian nhập liệu thủ công.
+
+### 5. 👥 Quản Lý Người Dùng & Phân Quyền (RBAC & User Management)
+* Quản lý danh sách học viên và quản trị viên trong hệ thống.
+* Chức năng phân quyền linh hoạt: Thăng cấp thành viên lên Admin hoặc hạ quyền về Student với hộp thoại xác nhận an toàn qua **SweetAlert2**.
+
+---
+
+## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+
+* **Thư viện giao diện chính:** [React 18](https://react.dev/)
+* **Công cụ xây dựng & Bundler:** [Vite 5](https://vitejs.dev/) (Khởi động tức thì với Hot Module Replacement - HMR).
+* **Quản lý trạng thái (State Management):** `@reduxjs/toolkit` & `react-redux`.
+* **Điều hướng (Routing):** `react-router-dom` v6.
+* **Kết nối API (HTTP Client):** `axios` (cấu hình interceptor đính kèm Firebase JWT token).
+* **Xác thực:** `firebase` SDK (Authentication & Role Verification).
+* **Icons & UI Feedback:** `lucide-react`, `sweetalert2`.
+* **Triển khai Cloud:** [Vercel](https://vercel.com/) (hỗ trợ rewrite SPA routing qua `vercel.json`) và **Firebase Hosting** (`firebase.json`).
+
+---
+
+## 📁 Cấu Trúc Thư Mục (Project Architecture)
+
+```
+src/
+├── assets/                  # Hình ảnh, logo, tài nguyên tĩnh
+├── components/              # Các UI Component tái sử dụng
+│   ├── common/              # Button, Input, Modal, Shimmer Loader
+│   └── layout/              # Sidebar điều hướng, Header, AdminLayout
+├── contexts/                # React Contexts (AuthContext quản lý phiên đăng nhập)
+├── pages/                   # Các màn hình chức năng chính
+│   ├── Admin/               # Dashboard, AdminsPage, UsersPage
+│   ├── Auth/                # Login, Register, Forgot Password
+│   ├── Exam/                # ExamManager, ExamEditor
+│   └── QBank/               # QBankPage (Listening, Reading, Speaking, Writing)
+├── services/                # Tầng giao tiếp API Backend & Firebase SDK
+│   ├── api.js               # Cấu hình Axios Base URL & Interceptors
+│   ├── authService.js       # Xác thực người dùng qua Firebase Auth
+│   ├── examService.js       # API đề thi kết nối với Backend ASP.NET
+│   └── qbankService.js      # API ngân hàng câu hỏi
+├── store/                   # Redux Toolkit Slices (Quản lý state phức tạp)
+└── utils/                   # Helpers, format ngày tháng, cấu hình Firebase
 ```
 
 ---
 
-### Bước 1 — Cài thư viện (chỉ làm 1 lần, hoặc khi có người thêm package mới)
+## 🚀 Hướng Dẫn Cài Đặt & Chạy Dưới Local (Getting Started)
 
-Mở terminal, `cd` vào thư mục `toeic-web-app` rồi chạy:
+### 1. Yêu Cầu Môi Trường
+* Đã cài đặt [Node.js](https://nodejs.org/) (phiên bản v18 trở lên).
+* Trình quản lý gói `npm` hoặc `yarn`.
 
+### 2. Clone Dự Án
+```bash
+git clone https://github.com/TranMinhTan3110/toeic-web-app.git
+cd toeic-web-app
+```
+
+### 3. Cài Đặt Thư Viện
 ```bash
 npm install
 ```
 
-> Lệnh này tải tất cả thư viện cần thiết vào thư mục `node_modules/`. Nếu đồng đội vừa thêm thư viện mới và bạn `git pull` về thì cũng cần chạy lại lệnh này.
+### 4. Cấu Hình Môi Trường (.env)
+Tạo file `.env` tại thư mục gốc:
 
----
+```env
+# Địa chỉ Backend API (.NET) đang chạy local:
+VITE_API_BASE_URL=http://localhost:8080/api
 
-### Bước 2 — Khởi động server giao diện
+# Cấu hình Firebase Web (lấy từ Firebase Console):
+VITE_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN=toeic-80ff0.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=toeic-80ff0
+VITE_FIREBASE_STORAGE_BUCKET=toeic-80ff0.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID
+VITE_FIREBASE_APP_ID=YOUR_APP_ID
+```
 
+### 5. Khởi Chạy Local Development
 ```bash
 npm run dev
 ```
 
-Terminal sẽ hiện ra địa chỉ như sau:
-
-```
-  VITE v5.x.x  ready in xxx ms
-
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: http://192.168.x.x:5173/
-```
-
-Mở trình duyệt và truy cập:
-
-| Trang | URL |
-|---|---|
-| **Đăng nhập** | http://localhost:5173/login |
-| **Đăng ký** | http://localhost:5173/register |
-| **Quên mật khẩu** | http://localhost:5173/forgot-password |
-
-> Mặc định http://localhost:5173/ sẽ tự redirect về `/login`.
+* Mở trình duyệt truy cập: **`http://localhost:5173`**
 
 ---
 
-### Lưu ý khi dùng Windows (PowerShell lỗi script)
+## 👥 Thành Viên Phát Triển (Team)
 
-Nếu terminal báo lỗi `running scripts is disabled on this system`, hãy dùng **Command Prompt (cmd)** thay vì PowerShell:
-
-```cmd
-cmd /c "npm install"
-cmd /c "npm run dev"
-```
-
-Hoặc mở **Git Bash** đi kèm khi cài Git rồi chạy bình thường.
+Dự án được xây dựng bởi nhóm 5 thành viên:
+* **Trần Minh Tấn ([@TranMinhTan3110](https://github.com/TranMinhTan3110))** — *Team Leader & Full-flow Integrator*
+* **Nhóm phát triển Frontend:** Phụ trách giao diện ReactJS, biểu đồ Dashboard và các form quản lý câu hỏi.
 
 ---
 
-### Dừng server
-
-Nhấn `Ctrl + C` trong terminal để tắt.
-
----
-
-##  1. Giải Thích Cấu Trúc Thư Mục Hiện Tại
-
-Dự án sử dụng **Vite + ReactJS**. Đây là chuẩn cấu trúc cho dự án lớn (Scalable Architecture).
-
-```text
-src/
-├── components/              # Các Component TÁI SỬ DỤNG
-│   ├── common/              # Nút (Button), Khung nhập (Input), Form mẫu, Popup (Modal)
-│   └── layout/              # Khung giao diện dùng chung: Navbar (Thanh trên), Footer (Chân trang), Sidebar
-│
-├── pages/                   # Nơi chứa MÀN HÌNH CHÍNH (mỗi thư mục tương ứng 1 trang)
-│   ├── Auth/                # Màn hình Login, Register
-│   ├── Exam/                # Màn hình Bài thi đầy đủ
-│   ├── Practice/            # Màn hình Luyện tập từng kỹ năng
-│   └── ... 
-│
-├── contexts/                # Quản lý trạng thái toàn cục (Context API)
-│   └── AuthContext.jsx      # Lưu trữ thông tin User đang đăng nhập, quyết định ai được xem trang nào
-│
-├── hooks/                   # Các Custom Hook (Logic tái sử dụng)
-│   ├── useAuth.js           # Xử lý logic rút gọn của Auth
-│   └── useExam.js           # Xử lý logic tính điểm, đếm giờ, lưu tạm
-│
-├── services/                # [QUAN TRỌNG NHẤT] — Lớp giao tiếp với bên ngoài (BE / Firebase)
-│   ├── authService.js       # Gọi thẳng hàm Firebase SDK để Đăng nhập / Đăng ký 
-│   ├── examService.js       # Dùng thư viện `axios` để gọi API tới ASP.NET lấy đề thi, chấm điểm
-│   └── vocabService.js      # Gọi Firebase (Firestore) để lấy từ vựng hoặc gọi ASP.NET
-│
-├── store/                   # (Tùy chọn) Redux Toolkit để quản lý State phức tạp
-│   └── slices/              # Lưu trạng thái ví dụ: Quá trình làm bài thi không bị mất khi lỡ F5
-│
-└── utils/
-    ├── firebase.js          # Khởi tạo kết nối với Firebase (Config lấy từ trang chủ Firebase)
-    └── helpers.js           # Các hàm phụ: Format ngày tháng, Tính thời gian, Chữ hoa chữ thường...
-```
-
----
-
-##  2. Quy Trình Tương Tác Giữa Frontend & Backend
-
-Frontend là **Tầng Hiển Thị**, không bao giờ được phép trực tiếp sửa đổi cơ sở dữ liệu quan trọng mà phải thông qua **Firebase (Auth)** hoặc **Backend (ASP.NET)**.
-
-### Trường hợp 1: Tính năng Xác thực (Login / Register)
-*Công nghệ: ReactJS giao tiếp trực tiếp với Firebase Auth.*
-
-1. Người dùng nhập Email + Password vào Form đăng nhập (`pages/Auth/Login.jsx`).
-2. Component Login gọi hàm từ thư mục `services/`: `signInWithEmail(email, pass)`.
-3. Hàm này tương tác với Firebase SDK (`utils/firebase.js`).
-4. Firebase trả về kết quả (Thành công/Thất bại) kèm **Token người dùng (JWT)**.
-5. `AuthContext.jsx` hứng lấy Token này, lưu vào Trạng thái toàn cục (State) và thả người dùng vào trang `Home`.
-
-### Trường hợp 2: Thi TOEIC hoặc Quản lý Dữ Liệu Phức Tạp
-*Công nghệ: ReactJS giao tiếp với Backend ASP.NET C# thông qua API (Axios).*
-
-1. Người dùng bấm "Vào thi" ở trang `pages/Exam/ExamPage.jsx`.
-2. Component gọi hàm `getExamData()` nằm trong `services/examService.js`.
-3. `examService.js` sử dụng công cụ `axios` để bắn **HTTP Request** qua đường dẫn Backend. Ví dụ: `GET https://[domain-asp-net]/api/exam/1`.
-   *(Nếu API yêu cầu bảo mật, nó sẽ nhúng thẳng Token lấy từ quá trình Firebase Login vào Header của Request).*
-4. **Backend ASP.NET** tiếp nhận, tự động kiểm tra chứng minh nhân thân, lôi dữ liệu từ Firestore lên tính toán, rồi trả lại cục dữ liệu câu hỏi (JSON) cho Frontend.
-5. Frontend nhận mảng JSON câu hỏi, đưa vào State và hiển thị giao diện bài thi ra cho User chọn A, B, C, D.
-6. Khi làm xong, người dùng bấm "Nộp Bài". Frontend lại bắn gói kết quả đó (`POST /api/exam/submit`) qua Backend ASP.NET để Backend tự tính điểm và ghi vào DataBase. Tuyệt đối **không tự tính điểm ở Frontend**.
-
----
-
-##  3. Quy Trình Làm Việc Nhóm (Git Flow)
-
-**Quy tắc:** Mọi người đều phải dựa vào nhánh `develop`. Tuyệt đối không ai dùng nhánh `main` khi viết lệnh code.
-
-**Các bước cụ thể cho các bạn Frontend:**
-
-1. **Lấy code mới nhất về trước khi code (Mỗi ngày):**
-   ```bash
-   git checkout develop
-   git pull origin develop
-   ```
-
-2. **Nếu muốn tải thư viện mới do đồng đội thêm vào:**
-   ```bash
-   npm install
-   ```
-
-3. **Khi bạn được giao làm tính năng "Giao diện bài thi" (Exam UI):**
-   - Đừng code ở `develop`. Hãy tạo nhánh con cho an toàn:
-   ```bash
-   git checkout -b feature/exam-ui
-   ```
-   - Code ròng rã 3 ngày. Viết xong `components`, sửa xong `pages`.
-
-4. **Khi tính năng xong xuôi, thử nghiệm không lỗi thì Gửi Code lên:**
-   ```bash
-   git add .
-   git commit -m "feat: Hoàn thành giao diện trang làm bài thi TOEIC"
-   git push origin feature/exam-ui
-   ```
-
-5. **Bước cuối (Tùy chọn cho Team Leader):** Lên mặt web của GitHub, bấm nút "**Compare & Pull Request**" để gộp nhánh `feature/exam-ui` ngược trở lại trang `develop`. Trưởng nhóm sẽ đọc code xem bạn code chuẩn không rồi mới bấm "Merge". 
-
-
-4. **Cài thư viện thông báo sweet alert**
-    `npm install sweetalert2`
+## 📄 License
+Phát hành theo giấy phép [MIT License](LICENSE).
