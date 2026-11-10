@@ -5,7 +5,6 @@
 [![Redux Toolkit](https://img.shields.io/badge/Redux-Toolkit-764ABC?logo=redux&logoColor=white)](https://redux-toolkit.js.org/)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Deployment](https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > Cổng thông tin quản trị trung tâm (Web Admin Portal) phục vụ hệ sinh thái luyện thi TOEIC 4 kỹ năng. Ứng dụng cung cấp bảng điều khiển thống kê (Dashboard Analytics), hệ thống quản lý ngân hàng câu hỏi (QBank CRUD), tạo và chỉnh sửa đề thi linh hoạt, công cụ import dữ liệu hàng loạt từ file Excel/CSV và quản lý phân quyền người dùng/quản trị viên.
 
@@ -30,7 +29,7 @@ Hệ thống được thiết kế theo kiến trúc Client-Server đồng bộ 
   <table style="border: none;">
     <tr>
       <td align="center"><img src="docs/screenshots/dashboard.png" width="380px" alt="Admin Dashboard"/><br/><b>Dashboard & Thống kê tăng trưởng</b></td>
-      <td align="center"><img src="docs/screenshots/qbank.png" width="380px" alt="Quản lý ngân hàng câu hỏi"/><br/><b>Quản lý QBank 4 kỹ năng</b></td>
+      <td align="center"><img src="docs/screenshots/vocabulary.png" width="380px" alt="Quản lý Từ vựng"/><br/><b>Quản lý Từ vựng & Import Excel/CSV</b></td>
     </tr>
     <tr>
       <td align="center"><img src="docs/screenshots/exam_editor.png" width="380px" alt="Tạo đề thi TOEIC"/><br/><b>Tạo & Soạn thảo đề thi</b></td>
@@ -39,7 +38,7 @@ Hệ thống được thiết kế theo kiến trúc Client-Server đồng bộ 
   </table>
 </div>
 
-> *Tip: Chụp ảnh màn hình thực tế của Web Admin đặt vào thư mục `docs/screenshots/` theo đúng tên trên để ảnh tự động hiển thị trên GitHub!*
+
 
 ---
 
@@ -49,9 +48,9 @@ Hệ thống được thiết kế theo kiến trúc Client-Server đồng bộ 
 * Hiển thị số lượng học viên, số lượt thi và tăng trưởng tài khoản đăng ký mới theo tuần.
 * Biểu đồ tương tác mượt mà với tooltip chi tiết và hiệu ứng khung xương (Shimmer loading) khi tải dữ liệu.
 
-### 2. 📚 Ngân Hàng Câu Hỏi (Question Bank Management - QBank)
-* Quản lý tập trung toàn diện câu hỏi cho cả 4 kỹ năng: **Listening (Part 1 - 4)**, **Reading (Part 5 - 7)**, **Speaking** và **Writing**.
-* Thao tác CRUD trực quan: Xem trước nội dung, phát thử file audio nghe, hiển thị hình ảnh câu hỏi và đáp án giải thích chi tiết.
+### 2. 📖 Quản Lý Từ Vựng & Ngân Hàng Đề Thi (Vocabulary & QBank)
+* **Quản lý từ vựng TOEIC:** Đồng bộ thời gian thực với Cloud Firestore, hỗ trợ phân loại theo chủ đề (Business, Education, Environment, Finance, Travel...) và cấp độ TOEIC (450+, 650+...).
+* **Ngân hàng câu hỏi tập trung:** Quản lý câu hỏi cho cả 4 kỹ năng: Listening (Part 1 - 4), Reading (Part 5 - 7), Speaking và Writing kèm âm thanh và hình ảnh minh họa.
 
 ### 3. 📝 Soạn Thảo & Quản Lý Đề Thi (Exam Manager & Editor)
 * Tạo mới các bộ đề thi thử (Exam Sets) theo cấu trúc chuẩn TOEIC ETS.
@@ -152,7 +151,3 @@ Dự án được xây dựng bởi nhóm 5 thành viên:
 * **Trần Minh Tấn ([@TranMinhTan3110](https://github.com/TranMinhTan3110))** — *Team Leader & Full-flow Integrator*
 * **Nhóm phát triển Frontend:** Phụ trách giao diện ReactJS, biểu đồ Dashboard và các form quản lý câu hỏi.
 
----
-
-## 📄 License
-Phát hành theo giấy phép [MIT License](LICENSE).
